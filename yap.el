@@ -128,6 +128,18 @@ The response from LLM is displayed in the *yap-response* buffer."
             (message "[ERROR] Failed to get a response from LLM")))
       (message "[ERROR] Failed to fill template for prompt: %s" prompt))))
 
+(defun yap--rewrite-buffer-or-selection (response)
+  "Replace the buffer or selection with the given RESPONSE."
+  (if response
+      (if (region-active-p)
+          (progn
+            (delete-region (region-beginning) (region-end))
+            (insert response))
+        (progn
+          (delete-region (point-min) (point-max))
+          (insert response "\n")))
+    (message "[ERROR] Failed to get a response from LLM")))
+
 (defun yap-rewrite (prompt &optional template)
   "Prompt the user with the given PROMPT using TEMPLATE if provided.
 Rewrite the buffer or selection if present with the returned response."
@@ -137,16 +149,7 @@ Rewrite the buffer or selection if present with the returned response."
                      (or template 'default-rewrite))) ; Otherwise, use default template if not provided
          (filled-prompt (yap--get-filled-template prompt template (current-buffer))))
     (if filled-prompt
-        (let ((response (yap--get-llm-response filled-prompt)))
-          (if response
-              (if (region-active-p)
-                  (progn
-                    (delete-region (region-beginning) (region-end))
-                    (insert response))
-                (progn
-                  (delete-region (point-min) (point-max))
-                  (insert response)))
-            (message "[ERROR] Failed to get a response from LLM")))
+        (yap--rewrite-buffer-or-selection (yap--get-llm-response filled-prompt))
       (message "[ERROR] Failed to fill template for prompt: %s" prompt))))
 
 (provide 'yap)
