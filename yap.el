@@ -36,6 +36,8 @@
   "Whether to respond in a new buffer or the echo area.")
 (defvar yap-respond-in-buffer-threshold 100
   "If the response is longer than this, always response in new buffer.")
+(defvar yap-show-diff-before-rewrite t
+  "Whether to show the diff before rewriting the buffer.")
 
 (defvar yap--response-buffer "*yap-response*")
 
@@ -136,7 +138,7 @@ The response from LLM is displayed in the *yap-response* buffer."
                 (format "diff -u <(echo %s) <(echo %s)"
                         (shell-quote-argument before)
                         (shell-quote-argument after))))))
-    (message "%s" diff)))
+    (format "%s" diff)))
 
 (defun yap--rewrite-buffer-or-selection (response buffer)
   "Replace the buffer or selection with the given RESPONSE in BUFFER."
@@ -145,15 +147,16 @@ The response from LLM is displayed in the *yap-response* buffer."
         (let* ((to-replace (if (region-active-p)
                                (buffer-substring-no-properties (region-beginning) (region-end))
                              (buffer-string)))
-              (diff (yap--show-diff to-replace response)))
-          (if (yes-or-no-p (format "%s\nDo you want to apply the following changes? " diff))
+               (diff (yap--show-diff to-replace response)))
+          (if (or (not yap-show-diff-before-rewrite)
+                  (yes-or-no-p (format "%s\nDo you want to apply the following changes? " diff)))
               (if (region-active-p)
                   (progn
                     (delete-region (region-beginning) (region-end))
-                    (insert response))
+                    (insert response "\n"))
                 (progn
                   (delete-region (point-min) (point-max))
-                  (insert response "\n")))
+                  (insert response)))
             (message "No changes made.")))
       (message "[ERROR] Failed to get a response from LLM"))))
 
