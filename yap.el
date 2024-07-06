@@ -174,6 +174,19 @@ Rewrite the buffer or selection if present with the returned response."
         (yap--rewrite-buffer-or-selection (yap--get-llm-response filled-prompt) buffer)
       (message "[ERROR] Failed to fill template for prompt: %s" prompt))))
 
+(defun yap-write (prompt &optional template)
+  "Prompt the user with the given PROMPT using TEMPLATE if provided.
+Kinda like `yap-rewrite', but just writes instead of replace."
+  (interactive "sPrompt: \nP")
+  (let* ((buffer (current-buffer))
+         (template (if (equal template '(4)) ; Check if C-u (universal argument) is provided
+                       (intern (completing-read "Template: " (mapcar 'car yap-templates)))
+                     (or template 'default-rewrite))) ; Otherwise, use default template if not provided
+         (filled-prompt (yap--get-filled-template prompt template buffer)))
+    (if filled-prompt
+        (insert (yap--get-llm-response filled-prompt))
+      (message "[ERROR] Failed to fill template for prompt: %s" prompt))))
+
 (defun yap-do (&optional template)
   "Similar to `yap-rewrite', but does not ask for a prompt and use TEMPLATE.
 If you need `yap-do' with prompt, you need `yap-prompt'."
