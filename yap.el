@@ -119,12 +119,33 @@ The response from LLM is displayed in the *yap-response* buffer."
   (interactive "sPrompt: \nP")
   (let* ((template (if (equal template '(4)) ; Check if C-u (universal argument) is provided
                        (intern (completing-read "Template: " (mapcar 'car yap-templates)))
-                     (or template 'default))) ; Otherwise, use default template if not provided
+                     (or template 'default-prompt))) ; Otherwise, use default template if not provided
          (filled-prompt (yap--get-filled-template prompt template (current-buffer))))
     (if filled-prompt
         (let ((response (yap--get-llm-response filled-prompt)))
           (if response
               (yap--present-response response)
+            (message "[ERROR] Failed to get a response from LLM")))
+      (message "[ERROR] Failed to fill template for prompt: %s" prompt))))
+
+(defun yap-rewrite (prompt &optional template)
+  "Prompt the user with the given PROMPT using TEMPLATE if provided.
+Rewrite the buffer or selection if present with the returned response."
+  (interactive "sPrompt: \nP")
+  (let* ((template (if (equal template '(4)) ; Check if C-u (universal argument) is provided
+                       (intern (completing-read "Template: " (mapcar 'car yap-templates)))
+                     (or template 'default-rewrite))) ; Otherwise, use default template if not provided
+         (filled-prompt (yap--get-filled-template prompt template (current-buffer))))
+    (if filled-prompt
+        (let ((response (yap--get-llm-response filled-prompt)))
+          (if response
+              (if (region-active-p)
+                  (progn
+                    (delete-region (region-beginning) (region-end))
+                    (insert response))
+                (progn
+                  (delete-region (point-min) (point-max))
+                  (insert response)))
             (message "[ERROR] Failed to get a response from LLM")))
       (message "[ERROR] Failed to fill template for prompt: %s" prompt))))
 

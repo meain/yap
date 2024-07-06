@@ -18,8 +18,24 @@
                  "\nUse the following text as the context for providing response to the prompt above:\n"
                  selection)))))
 
+;; TODO: Improve prompt
+(defun yap-template-simple-rewrite (prompt buffer)
+  "A simple yap template that just return the `PROMPT' and selection `BUFFER'."
+  (let ((selection (with-current-buffer buffer
+                     (if (region-active-p)
+                         (buffer-substring (region-beginning) (region-end))))))
+    (concat prompt
+            (if (> (length selection) 0)
+                (concat
+                 "\nUse the following text as the context for providing response to the prompt above:\n"
+                 selection
+                 "\n\n---\nWhen resopnding only provide the exact content to rewrite and nothing additional."
+                 " For code responses, just provide the raw code snippet without additional text or markers above or below."
+                 "Do not add ``` in the response")))))
+
 (defvar yap-templates
-  '((default . yap-template-simple)
+  '((default-prompt . yap-template-simple)
+    (default-rewrite . yap-template-simple-rewrite)
     (what . (lambda (query &rest _) (concat "What or who is " query "? Provide a summary and 5 bullet points."))))
   "A list of yap templates.")
 
@@ -34,8 +50,7 @@
 
 (defun yap--get-filled-template (prompt template buffer)
   "Get the filled `TEMPLATE' for the given `PROMPT'."
-  (if-let ((template-func (alist-get template yap-templates)))
-    (funcall template-func prompt buffer)))
+  (funcall (alist-get template yap-templates) prompt buffer))
 
 (provide 'yap-templates)
 ;;; yap-templates.el ends here
