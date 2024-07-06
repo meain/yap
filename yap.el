@@ -26,7 +26,11 @@
 (defvar yap-api-key nil
   "The api key to use for the yap command.")
 (defvar yap-system-prompt
-  "You are a helpful assistant. Give concise answers to questions. Don't be too chatty. Do not ask,suggest follow up questions."
+  (concat "You are a helpful assistant."
+          " Give concise answers to questions."
+          " Don't be too chatty."
+          " Do not ask,suggest follow up questions."
+          " For code blocks mark it with the language name.")
   "The system prompt to use for the yap command.")
 (defvar yap-respond-in-buffer nil
   "Whether to respond in a new buffer or the echo area.")
