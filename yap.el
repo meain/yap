@@ -128,28 +128,46 @@ The response from LLM is displayed in the *yap-response* buffer."
             (message "[ERROR] Failed to get a response from LLM")))
       (message "[ERROR] Failed to fill template for prompt: %s" prompt))))
 
-(defun yap--rewrite-buffer-or-selection (response)
-  "Replace the buffer or selection with the given RESPONSE."
-  (if response
-      (if (region-active-p)
-          (progn
-            (delete-region (region-beginning) (region-end))
-            (insert response))
-        (progn
-          (delete-region (point-min) (point-max))
-          (insert response "\n")))
-    (message "[ERROR] Failed to get a response from LLM")))
+(defun yap--show-diff (before after)
+  "Show the diff between BEFORE and AFTER."
+  ;; TODO: Use diff package
+  (let ((diff (substring-no-properties
+               (shell-command-to-string
+                (format "diff -u <(echo %s) <(echo %s)"
+                        (shell-quote-argument before)
+                        (shell-quote-argument after))))))
+    (message "%s" diff)))
+
+(defun yap--rewrite-buffer-or-selection (response buffer)
+  "Replace the buffer or selection with the given RESPONSE in BUFFER."
+  (with-current-buffer buffer
+    (if response
+        (let* ((to-replace (if (region-active-p)
+                               (buffer-substring-no-properties (region-beginning) (region-end))
+                             (buffer-string)))
+              (diff (yap--show-diff to-replace response)))
+          (if (yes-or-no-p (format "%s\nDo you want to apply the following changes? " diff))
+              (if (region-active-p)
+                  (progn
+                    (delete-region (region-beginning) (region-end))
+                    (insert response))
+                (progn
+                  (delete-region (point-min) (point-max))
+                  (insert response "\n")))
+            (message "No changes made.")))
+      (message "[ERROR] Failed to get a response from LLM"))))
 
 (defun yap-rewrite (prompt &optional template)
   "Prompt the user with the given PROMPT using TEMPLATE if provided.
 Rewrite the buffer or selection if present with the returned response."
   (interactive "sPrompt: \nP")
-  (let* ((template (if (equal template '(4)) ; Check if C-u (universal argument) is provided
+  (let* ((buffer (current-buffer))
+         (template (if (equal template '(4)) ; Check if C-u (universal argument) is provided
                        (intern (completing-read "Template: " (mapcar 'car yap-templates)))
                      (or template 'default-rewrite))) ; Otherwise, use default template if not provided
-         (filled-prompt (yap--get-filled-template prompt template (current-buffer))))
+         (filled-prompt (yap--get-filled-template prompt template buffer)))
     (if filled-prompt
-        (yap--rewrite-buffer-or-selection (yap--get-llm-response filled-prompt))
+        (yap--rewrite-buffer-or-selection (yap--get-llm-response filled-prompt) buffer)
       (message "[ERROR] Failed to fill template for prompt: %s" prompt))))
 
 (provide 'yap)
