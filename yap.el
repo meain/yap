@@ -120,7 +120,7 @@ The response from LLM is displayed in the *yap-response* buffer."
   (let* ((template (if (equal template '(4)) ; Check if C-u (universal argument) is provided
                        (intern (completing-read "Template: " (mapcar 'car yap-templates)))
                      (or template 'default))) ; Otherwise, use default template if not provided
-         (filled-prompt (yap--get-filled-template prompt template)))
+         (filled-prompt (yap--get-filled-template prompt template (current-buffer))))
     (if filled-prompt
         (let ((response (yap--get-llm-response filled-prompt)))
           (if response

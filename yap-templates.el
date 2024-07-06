@@ -7,13 +7,16 @@
 
 ;;; Code:
 
-(defun yap-template-simple (prompt &optional selection _)
-  "A simple yap template that just return the `PROMPT' and `SELECTION'."
-  (concat prompt
-          (if (> (length selection) 0)
-              (concat
-               "\nUse the following text as the context for providing response to the prompt above:\n"
-               selection))))
+(defun yap-template-simple (prompt buffer)
+  "A simple yap template that just return the `PROMPT' and selection `BUFFER'."
+  (let ((selection (with-current-buffer buffer
+                     (if (region-active-p)
+                         (buffer-substring (region-beginning) (region-end))))))
+    (concat prompt
+            (if (> (length selection) 0)
+                (concat
+                 "\nUse the following text as the context for providing response to the prompt above:\n"
+                 selection)))))
 
 (defvar yap-templates
   '((default . yap-template-simple)
@@ -29,12 +32,10 @@
         selection)
     nil))
 
-(defun yap--get-filled-template (prompt template)
+(defun yap--get-filled-template (prompt template buffer)
   "Get the filled `TEMPLATE' for the given `PROMPT'."
-  (let ((selection (if (region-active-p)
-                          (buffer-substring (region-beginning) (region-end))))
-           (template-func (alist-get template yap-templates)))
-    (funcall template-func prompt selection (current-buffer))))
+  (if-let ((template-func (alist-get template yap-templates)))
+    (funcall template-func prompt buffer)))
 
 (provide 'yap-templates)
 ;;; yap-templates.el ends here
