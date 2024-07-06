@@ -34,6 +34,8 @@
   "The system prompt to use for the yap command.")
 (defvar yap-respond-in-buffer nil
   "Whether to respond in a new buffer or the echo area.")
+(defvar yap-respond-in-buffer-threshold 100
+  "If the response is longer than this, always response in new buffer.")
 
 (defvar yap--response-buffer "*yap-response*")
 
@@ -98,7 +100,7 @@
 
 (defun yap--present-response (response)
   "Present the RESPONSE in a new buffer or the echo area."
-  (if yap-respond-in-buffer
+  (if (or yap-respond-in-buffer (> (length response) yap-respond-in-buffer-threshold))
       (progn
         (with-current-buffer (get-buffer-create yap--response-buffer)
           (erase-buffer)
