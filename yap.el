@@ -27,7 +27,7 @@
   "The api key to use for the yap command.")
 (defvar yap-respond-in-buffer nil
   "Whether to respond in a new buffer or the echo area.")
-(defvar yap-respond-in-buffer-threshold 100
+(defvar yap-respond-in-buffer-threshold 300
   "If the response is longer than this, always response in new buffer.")
 (defvar yap-show-diff-before-rewrite t
   "Whether to show the diff before rewriting the buffer.")
@@ -172,6 +172,20 @@ Rewrite the buffer or selection if present with the returned response."
          (filled-prompt (yap--get-filled-template prompt template buffer)))
     (if filled-prompt
         (yap--rewrite-buffer-or-selection (yap--get-llm-response filled-prompt) buffer)
+      (message "[ERROR] Failed to fill template for prompt: %s" prompt))))
+
+(defun yap-do (&optional template)
+  "Similar to `yap-rewrite', but does not ask for a prompt and use TEMPLATE.
+If you need `yap-do' with prompt, you need `yap-prompt'."
+  (interactive)
+  (let* ((buffer (current-buffer))
+         (template (or template (intern (completing-read "Template: " (mapcar 'car yap-templates)))))
+         (filled-prompt (yap--get-filled-template "" template buffer)))
+    (if filled-prompt
+        (let ((response (yap--get-llm-response filled-prompt)))
+          (if response
+              (yap--present-response response)
+            (message "[ERROR] Failed to get a response from LLM")))
       (message "[ERROR] Failed to fill template for prompt: %s" prompt))))
 
 (provide 'yap)
