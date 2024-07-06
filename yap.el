@@ -25,13 +25,6 @@
   "The model to use for the yap command.")
 (defvar yap-api-key nil
   "The api key to use for the yap command.")
-(defvar yap-system-prompt
-  (concat "You are a helpful assistant."
-          " Give concise answers to questions."
-          " Don't be too chatty."
-          " Do not ask,suggest follow up questions."
-          " For code blocks mark it with the language name.")
-  "The system prompt to use for the yap command.")
 (defvar yap-respond-in-buffer nil
   "Whether to respond in a new buffer or the echo area.")
 (defvar yap-respond-in-buffer-threshold 100
@@ -73,32 +66,40 @@
             (model-name (completing-read "Model: " model-names)))
       (setq yap-model model-name)))
 
-(defun yap--get-llm-response (prompt)
-  "Get the response from llm for the given PROMPT."
-  (let* ((url-request-method "POST")
-         (url-request-extra-headers
-          `(("Content-Type" . "application/json")
-            ("Authorization" . ,(format "Bearer %s" yap-api-key))))
-         (url-request-data
-          (json-encode
-           `(("model" . ,yap-model)
-             ("messages" . ((("role" . "system")
-                             ("content" . ,yap-system-prompt))
-                            (("role" . "user")
-                             ("content" . ,prompt)))))))
-         (url-request-data-type 'json)
-         (resp (with-current-buffer (url-retrieve-synchronously
-                                     "https://api.openai.com/v1/chat/completions")
-                 (goto-char (point-min))
-                 (re-search-forward "^$")
-                 (json-read))))
-    (if (alist-get 'choices resp)
-        (alist-get 'content
-                   (alist-get 'message
-                              (aref (alist-get 'choices resp) 0)))
-      (progn
-        (message "[ERROR] Unable to get response %s" (yap--get-error-message resp))
-        nil))))
+(defun yap--convert-alist (alist)
+  "Convert ALIST from (role . content) to ((\"role\" . role) (\"content\" . content))."
+  (mapcar (lambda (pair)
+            (let ((role (car pair))
+                  (content (cdr pair)))
+              `(("role" . ,role) ("content" . ,content))))
+          alist))
+
+
+;; Use `(setq url-debug 1)' to debug things
+(defun yap--get-llm-response (messages)
+  "Get the response from llm for the given set of MESSAGES."
+  (progn
+    (let* ((url-request-method "POST")
+           (url-request-extra-headers
+            `(("Content-Type" . "application/json")
+              ("Authorization" . ,(format "Bearer %s" yap-api-key))))
+           (url-request-data
+            (json-encode
+             `(("model" . ,yap-model)
+               ("messages" . ,(yap--convert-alist messages)))))
+           (url-request-data-type 'json)
+           (resp (with-current-buffer (url-retrieve-synchronously
+                                       "https://api.openai.com/v1/chat/completions")
+                   (goto-char (point-min))
+                   (re-search-forward "^$")
+                   (json-read))))
+      (if (alist-get 'choices resp)
+          (alist-get 'content
+                     (alist-get 'message
+                                (aref (alist-get 'choices resp) 0)))
+        (progn
+          (message "[ERROR] Unable to get response %s" (yap--get-error-message resp))
+          nil)))))
 
 (defun yap--present-response (response)
   "Present the RESPONSE in a new buffer or the echo area."

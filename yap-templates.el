@@ -7,50 +7,71 @@
 
 ;;; Code:
 
-(defun yap-template-simple (prompt buffer)
-  "A simple yap template that just return the `PROMPT' and selection `BUFFER'."
-  (let ((selection (with-current-buffer buffer
-                     (if (region-active-p)
-                         (buffer-substring (region-beginning) (region-end))))))
-    (concat prompt
-            (if (> (length selection) 0)
-                (concat
-                 "\nUse the following text as the context for providing response to the prompt above:\n"
-                 selection)))))
+;; TODO(meain): use defcustom
+(defvar yap-default-system-prompt-for-prompt
+  (concat "You are a helpful assistant."
+          " Give concise answers to questions."
+          " Don't be too chatty."
+          " Do not ask,suggest follow up questions."
+          " For code blocks mark it with the language name.")
+  "The system prompt to use for the `yap-prompt' command.")
 
-;; TODO: Improve prompt
-(defun yap-template-simple-rewrite (prompt buffer)
-  "A simple yap template that just return the `PROMPT' and selection `BUFFER'."
-  (let ((selection (with-current-buffer buffer
-                     (if (region-active-p)
-                         (buffer-substring (region-beginning) (region-end))))))
-    (concat prompt
-            (if (> (length selection) 0)
-                (concat
-                 "\nUse the following text as the context for providing response to the prompt above:\n"
-                 selection
-                 "\n\n---\nWhen resopnding only provide the exact content to rewrite and nothing additional."
-                 " For code responses, just provide the raw code snippet without additional text or markers above or below."
-                 "Do not add ``` in the response")))))
+(defvar yap-default-system-prompt-for-rewrite
+  (concat "You are a helpful assistant who helps rewrite/refactor code and prose."
+          "For code responses, just provide the raw code snippet without additional text or markers above or below"
+          "as in do not add ``` in the response.")
+  "The system prompt to use for the `yap-rewrite' command.")
+
+(defun yap--create-messages (system-prompt user-prompt &optional context)
+  "Generate Messages to send to the llm.
+Use the with the given `SYSTEM-PROMPT', `USER-PROMPT' and `CONTEXT'."
+  `(("system" . ,system-prompt)
+    ,@(when context
+        `(("user" . ,context)
+          ("assistant" . "Sure. What would you like me to help with?")))
+    ("user" . ,user-prompt)))
+
+(defun yap--template-simple (system-prompt prompt buffer)
+  "Create yap template using `SYSTEM-PROMPT', `PROMPT' and `BUFFER'."
+  (let* ((selection (yap--get-selected-text buffer))
+         (context (if selection
+                      (concat  "Use the content below as context for any follow-up tasks:\n\n" selection))))
+    (yap--create-messages system-prompt prompt context)))
+
+(defun yap-template-prompt (prompt buffer)
+  "A simple prompt template using `PROMPT' and selection in `BUFFER'."
+  (yap--template-simple yap-default-system-prompt-for-prompt prompt buffer))
+
+(defun yap-template-rewrite (prompt buffer)
+  "A simple rewrite template using `PROMPT' and selection in `BUFFER'."
+  (yap--template-simple yap-default-system-prompt-for-rewrite prompt buffer))
+
+(defun yap-template-simple (prompt)
+  "Generate a simple template for PROMPT."
+  (yap--create-messages yap-default-system-prompt-for-prompt prompt))
 
 (defvar yap-templates
-  '((default-prompt . yap-template-simple)
-    (default-rewrite . yap-template-simple-rewrite)
-    (what . (lambda (query &rest _) (concat "What or who is " query "? Provide a summary and 5 bullet points."))))
+  '((default-prompt . yap-template-prompt)
+    (default-rewrite . yap-template-rewrite)
+    (what . "What or who is {{prompt}}? Provide a summary and 5 bullet points."))
   "A list of yap templates.")
 
-(defun yap--get-selected-text ()
-  "Get the selected text in the current buffer, if any."
+(defun yap--get-selected-text (buffer)
+  "Get the selected text in the specified BUFFER, if any."
   (interactive)
-  (if (region-active-p)
-      (let ((selection (buffer-substring (region-beginning) (region-end))))
-        (message "Selected text: %s" selection)
-        selection)
-    nil))
+  (with-current-buffer buffer
+    (if (region-active-p)
+        (let ((selection (buffer-substring (region-beginning) (region-end))))
+          (message "Selected text: %s" selection)
+          selection)
+      nil)))
 
 (defun yap--get-filled-template (prompt template buffer)
-  "Get the filled `TEMPLATE' for the given `PROMPT'."
-  (funcall (alist-get template yap-templates) prompt buffer))
+  "Get the filled `TEMPLATE' for the provided `PROMPT'."
+  (let ((yap-template (alist-get template yap-templates)))
+    (if (functionp yap-template)
+        (funcall yap-template prompt buffer)
+      (yap-template-simple (string-replace "{{prompt}}" prompt yap-template))))))
 
 (provide 'yap-templates)
 ;;; yap-templates.el ends here
