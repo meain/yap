@@ -103,7 +103,10 @@
         (with-current-buffer (get-buffer-create yap--response-buffer)
           (erase-buffer)
           (insert response)
-          (display-buffer (current-buffer))))
+          (display-buffer (current-buffer))
+          ;; Enable markdown mode if available
+          (if (fboundp 'markdown-mode)
+              (markdown-mode))))
     (message response)))
 
 (defun yap-prompt (prompt &optional template)
