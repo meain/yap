@@ -53,7 +53,7 @@
             ("Authorization" . ,(format "Bearer %s" yap-api-key))))
          (url-request-data-type 'json)
          (resp (with-current-buffer (url-retrieve-synchronously
-                                     "https://api.openai.com/v1/model")
+                                     "https://api.openai.com/v1/models")
                  (goto-char (point-min))
                  (re-search-forward "^$")
                  (json-read))))
