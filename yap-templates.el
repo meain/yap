@@ -50,24 +50,17 @@ Use the with the given `SYSTEM-PROMPT', `USER-PROMPT' and `CONTEXT'."
   "Generate a simple template for PROMPT."
   (yap--create-messages yap-default-system-prompt-for-prompt prompt))
 
-;; TODO: Make this work with full buffer if no selection
-(defun yap--template-do (prompt buffer)
-  "Create a yap template for the `do' command using `PROMPT' and `BUFFER'."
-  (if-let* ((selection (yap--get-selected-text buffer))
-            (context (if selection
-                         (concat  "Use the content below as context for any follow-up tasks:\n\n" selection))))
-      (yap--create-messages yap-default-system-prompt-for-prompt prompt context)))
-
 (defun yap--summarize (_ buffer)
   "Summarize the selected text in the specified BUFFER."
-  (yap--template-do "Summarize the selected text." buffer))
+  (yap-template-prompt "Summarize the given text. Use bullet points for key ideas." buffer))
 
 (defun yap--explain-code (_ buffer)
   "Explain the code in the specified BUFFER."
-  (yap--template-do "Explain the code step by step" buffer))
+  (yap-template-prompt "Explain the code step by step" buffer))
 
 ;; TODO(meain): different set of templates for yap-prompt, yap-rewrite
 ;; and yap-do so that user won't have the whole set to pick from
+;; TODO: Maybe leverage https://github.com/f/awesome-chatgpt-prompts
 (defvar yap-templates
   '((default-prompt . yap-template-prompt)
     (default-rewrite . yap-template-rewrite)

@@ -76,6 +76,7 @@
 
 
 ;; Use `(setq url-debug 1)' to debug things
+;; TODO: Retain a log of all the messages
 (defun yap--get-llm-response (messages)
   "Get the response from llm for the given set of MESSAGES."
   (progn
@@ -188,8 +189,7 @@ Kinda like `yap-rewrite', but just writes instead of replace."
       (message "[ERROR] Failed to fill template for prompt: %s" prompt))))
 
 (defun yap-do (&optional template)
-  "Similar to `yap-rewrite', but does not ask for a prompt and use TEMPLATE.
-If you need `yap-do' with prompt, you need `yap-prompt'."
+  "Similar to `yap-prompt', but only TEMPLATE and no prompt."
   (interactive)
   (let* ((buffer (current-buffer))
          (template (or template (intern (completing-read "Template: " (mapcar 'car yap-templates)))))
@@ -199,7 +199,7 @@ If you need `yap-do' with prompt, you need `yap-prompt'."
           (if response
               (yap--present-response response)
             (message "[ERROR] Failed to get a response from LLM")))
-      (message "[ERROR] Failed to fill template for prompt: %s" prompt))))
+      (message "[ERROR] Failed to fill template"))))
 
 (provide 'yap)
 ;;; yap.el ends here
