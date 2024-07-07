@@ -10,6 +10,9 @@
 ;; A thing to help you do stuff with llm.  This tool mostly just
 ;; provides a way for you to easily call predefined templates and edit
 ;; buffer using the provided responses.
+;;
+;; Todo:
+;; - Add a way to continue a conversation or refactor (save state and reuse)
 
 ;;; Code:
 
@@ -80,6 +83,7 @@
 (defun yap--get-llm-response (messages)
   "Get the response from llm for the given set of MESSAGES."
   (progn
+    (message "Processing request via %s and %s model..." yap-service yap-model)
     (let* ((url-request-method "POST")
            (url-request-extra-headers
             `(("Content-Type" . "application/json")
