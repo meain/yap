@@ -4,11 +4,19 @@
 ;; This file contains basic templates for yap.  A yap template is a
 ;; function that gets passed in a prompt, section and a buffer returns
 ;; the text to be sent to an llm for response.
+;;
+;; Notes:
+;; - Multiple messages work better when compared to as single message in
+;;   which we include all the context.
+;; - For questions with full buffer context smaller/older models like
+;;   gpt-3.5 don't work that well.
+;;
+;; Todos:
+;; - Maybe an option to override model in the template
 
 ;;; Code:
 
-;; TODO(meain): use defcustom
-(defvar yap-default-system-prompt-for-prompt
+(defconst yap--default-system-prompt-for-prompt
   (concat "You are a helpful assistant."
           " Give concise answers to questions."
           " Don't be too chatty."
@@ -16,7 +24,7 @@
           " For code blocks mark it with the language name.")
   "The system prompt to use for the `yap-prompt' command.")
 
-(defvar yap-default-system-prompt-for-rewrite
+(defconst yap--default-system-prompt-for-rewrite
   (concat "You are a helpful assistant who helps rewrite/refactor code and prose."
           "For code responses, just provide the raw code snippet without additional text or markers above or below"
           "as in do not add ``` in the response.")
@@ -38,17 +46,58 @@ Use the with the given `SYSTEM-PROMPT', `USER-PROMPT' and `CONTEXT'."
                       (concat  "Use the content below as context for any follow-up tasks:\n\n" selection))))
     (yap--create-messages system-prompt prompt context)))
 
+(defun yap--template-buffer-context (system-prompt prompt buffer)
+  "Similar to `yap--template-simple', but with buffer as context.
+`SYSTEM-PROMPT', `PROMPT' and `BUFFER' serve the same purpose as the
+name suggest.
+
+Order of messages:
+- system-prompt
+- user: content before cursor (if selection, then before selection)
+- assistant: ok
+- user: content after cursor (or selection)
+- assistant: ok
+- user(if selection): the selected text
+- assistant: what can I help with?
+- user: {{{prompt}}}"
+  (let* ((selection (yap--get-selected-text buffer))
+         (before (if selection
+                     (buffer-substring-no-properties (point-min) (region-beginning))
+                   (buffer-substring-no-properties (point-min) (point))))
+         (after (if selection
+                    (buffer-substring-no-properties (region-end) (point-max))
+                  (buffer-substring-no-properties (point) (point-max)))))
+    (if selection
+        `(("system" . ,system-prompt)
+          ("user" . "I'll provide you context about a document in which I have highlighted a section.")
+          ("assistant" . "OK. What is the highlighted text?")
+          ("user" . ,(concat "This is the text in the document that is highlighted:\n\n" selection))
+          ("assistant" . "What is there before the highlighted section?")
+          ("user" . ,(concat "Here is the text before: \n\n" before))
+          ("assistant" . "What is there after the highlighted section?")
+          ("user" . ,(concat "Here is the text after: \n\n" after))
+          ("assistant" . "What can I help you with?")
+          ("user" . ,prompt))
+      `(("system" . ,system-prompt)
+        ("user" . "I'll provide you context about a document that I am working on. I'm somewhere within the document.")
+        ("assistant" . "OK. What comes before your current position?")
+        ("user". ,(concat "Here is the text before the cursor:\n\n" before))
+        ("assistant" . "What comes after your current position?")
+        ("user" . ,(concat "Here is the text after the cursor:\n\n" after))
+        ("assistant" . "What can I help you with?")
+        ("user" . ,prompt)))))
+
 (defun yap-template-prompt (prompt buffer)
   "A simple prompt template using `PROMPT' and selection in `BUFFER'."
-  (yap--template-simple yap-default-system-prompt-for-prompt prompt buffer))
+  (yap--template-simple yap--default-system-prompt-for-prompt prompt buffer))
 
 (defun yap-template-rewrite (prompt buffer)
   "A simple rewrite template using `PROMPT' and selection in `BUFFER'."
-  (yap--template-simple yap-default-system-prompt-for-rewrite prompt buffer))
+  (yap--template-simple yap--default-system-prompt-for-rewrite prompt buffer))
 
 (defun yap-template-simple (prompt)
   "Generate a simple template for PROMPT."
-  (yap--create-messages yap-default-system-prompt-for-prompt prompt))
+  (yap--create-messages yap--default-system-prompt-for-prompt prompt))
 
 (defun yap--summarize (_ buffer)
   "Summarize the selected text in the specified BUFFER."
@@ -58,12 +107,22 @@ Use the with the given `SYSTEM-PROMPT', `USER-PROMPT' and `CONTEXT'."
   "Explain the code in the specified BUFFER."
   (yap-template-prompt "Explain the code step by step" buffer))
 
+(defun yap-template-prompt-buffer-context (prompt buffer)
+  "A template for `yap-prompt' using `PROMPT' and `BUFFER' as context."
+  (yap--template-buffer-context yap--default-system-prompt-for-prompt prompt buffer))
+
+(defun yap-template-rewrite-buffer-context (prompt buffer)
+  "A template for `yap-rewrite' using `PROMPT' and `BUFFER' as context."
+  (yap--template-buffer-context yap--default-system-prompt-for-rewrite prompt buffer))
+
 ;; TODO(meain): different set of templates for yap-prompt, yap-rewrite
 ;; and yap-do so that user won't have the whole set to pick from
 ;; TODO: Maybe leverage https://github.com/f/awesome-chatgpt-prompts
 (defvar yap-templates
   '((default-prompt . yap-template-prompt)
     (default-rewrite . yap-template-rewrite)
+    (default-prompt-buffer-context . yap-template-prompt-buffer-context)
+    (default-rewrite-buffer-context . yap-template-rewrite-buffer-context)
     (summarize . yap--summarize)
     (explain-code . yap--explain-code)
     (what . "What or who is {{prompt}}? Provide a summary and 5 bullet points."))
@@ -75,7 +134,6 @@ Use the with the given `SYSTEM-PROMPT', `USER-PROMPT' and `CONTEXT'."
   (with-current-buffer buffer
     (if (region-active-p)
         (let ((selection (buffer-substring (region-beginning) (region-end))))
-          (message "Selected text: %s" selection)
           selection)
       nil)))
 
