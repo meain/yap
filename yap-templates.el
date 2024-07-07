@@ -13,6 +13,8 @@
 ;;
 ;; Todos:
 ;; - Maybe an option to override model in the template
+;; - Separate set of prompts for yap-prompt, yap-rewrite and yap-do
+;; - Maybe use strings as keys for yap-templates instead of symbols
 
 ;;; Code:
 
@@ -39,15 +41,20 @@ Use the with the given `SYSTEM-PROMPT', `USER-PROMPT' and `CONTEXT'."
           ("assistant" . "Sure. What would you like me to help with?")))
     ("user" . ,user-prompt)))
 
-(defun yap--template-simple (system-prompt prompt buffer)
-  "Create yap template using `SYSTEM-PROMPT', `PROMPT' and `BUFFER'."
+(defun yap-template-simple (prompt)
+  "Generate a simple template for PROMPT."
+  (yap--create-messages yap--default-system-prompt-for-prompt prompt))
+
+(defun yap-template-selection-context (system-prompt prompt buffer)
+  "Create yap template using `SYSTEM-PROMPT', `PROMPT' and `BUFFER'.
+If the buffer has a selection, then the selection is used as context."
   (let* ((selection (yap--get-selected-text buffer))
          (context (if selection
                       (concat  "Use the content below as context for any follow-up tasks:\n\n" selection))))
     (yap--create-messages system-prompt prompt context)))
 
-(defun yap--template-buffer-context (system-prompt prompt buffer)
-  "Similar to `yap--template-simple', but with buffer as context.
+(defun yap-template-buffer-context (system-prompt prompt buffer)
+  "Similar to `yap-template-selection-context', but with buffer as context.
 `SYSTEM-PROMPT', `PROMPT' and `BUFFER' serve the same purpose as the
 name suggest.
 
@@ -89,15 +96,11 @@ Order of messages:
 
 (defun yap-template-prompt (prompt buffer)
   "A simple prompt template using `PROMPT' and selection in `BUFFER'."
-  (yap--template-simple yap--default-system-prompt-for-prompt prompt buffer))
+  (yap-template-selection-context yap--default-system-prompt-for-prompt prompt buffer))
 
 (defun yap-template-rewrite (prompt buffer)
   "A simple rewrite template using `PROMPT' and selection in `BUFFER'."
-  (yap--template-simple yap--default-system-prompt-for-rewrite prompt buffer))
-
-(defun yap-template-simple (prompt)
-  "Generate a simple template for PROMPT."
-  (yap--create-messages yap--default-system-prompt-for-prompt prompt))
+  (yap-template-selection-context yap--default-system-prompt-for-rewrite prompt buffer))
 
 (defun yap--summarize (_ buffer)
   "Summarize the selected text in the specified BUFFER."
@@ -109,11 +112,11 @@ Order of messages:
 
 (defun yap-template-prompt-buffer-context (prompt buffer)
   "A template for `yap-prompt' using `PROMPT' and `BUFFER' as context."
-  (yap--template-buffer-context yap--default-system-prompt-for-prompt prompt buffer))
+  (yap-template-buffer-context yap--default-system-prompt-for-prompt prompt buffer))
 
 (defun yap-template-rewrite-buffer-context (prompt buffer)
   "A template for `yap-rewrite' using `PROMPT' and `BUFFER' as context."
-  (yap--template-buffer-context yap--default-system-prompt-for-rewrite prompt buffer))
+  (yap-template-buffer-context yap--default-system-prompt-for-rewrite prompt buffer))
 
 ;; TODO(meain): different set of templates for yap-prompt, yap-rewrite
 ;; and yap-do so that user won't have the whole set to pick from
@@ -125,7 +128,7 @@ Order of messages:
     (default-rewrite-buffer-context . yap-template-rewrite-buffer-context)
     (summarize . yap--summarize)
     (explain-code . yap--explain-code)
-    (what . "What or who is {{prompt}}? Provide a summary and 5 bullet points."))
+    (who-what . "What or who is {{prompt}}? Provide a summary and 5 bullet points."))
   "A list of yap templates.")
 
 (defun yap--get-selected-text (buffer)
