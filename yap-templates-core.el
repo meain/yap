@@ -79,7 +79,7 @@ Order of messages:
     (if selection
         `(("system" . ,system-prompt)
           ("user" . ,(concat "I'll provide a document in which I have highlighted a section. "
-                            "Answer for the highlighted section but use the rest of the text as context."))
+                             "Answer for the highlighted section but use the rest of the text as context."))
           ("assistant" . "OK. What is the highlighted text?")
           ("user" . ,(concat "This is the text in the document that is highlighted:\n\n" selection))
           ("assistant" . "What is there before the highlighted section?")
@@ -119,7 +119,9 @@ Order of messages:
   (let ((yap-template (alist-get template yap-templates)))
     (if (functionp yap-template)
         (funcall yap-template prompt buffer)
-      (yap-template-simple (string-replace "{{prompt}}" prompt yap-template)))))
+      (if (stringp yap-template)
+          (yap-template-simple (string-replace "{{prompt}}" prompt yap-template))
+        (funcall (alist-get 'function yap-template) prompt buffer)))))
 
 (provide 'yap-templates-core)
 ;;; yap-templates-core.el ends here

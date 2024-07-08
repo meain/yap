@@ -187,15 +187,27 @@ This is a temporary solution until we have a proper API to get models."
               (markdown-mode))))
     (message response)))
 
-(defun yap-prompt (prompt &optional template)
+(defun yap--maybe-get-prompt (template)
+  "Get the prompt from the user if the TEMPLATE requires it."
+  (let* ((yap-template (alist-get template yap-templates))
+         (prompt (if (equal (type-of yap-template) 'cons)
+                     (alist-get 'prompt yap-template)
+                   (if (equal (type-of yap-template) 'symbol)
+                       nil
+                     (string-search "{{prompt}}" yap-template)))))
+    (if prompt (read-string "Prompt: ")
+      nil)))
+
+(defun yap-prompt (&optional template prompt)
   "Prompt the user with the given PROMPT using TEMPLATE if provided.
 If TEMPLATE is not provided or nil, use the default template.
 If invoked with a universal argument (C-u), prompt for TEMPLATE selection.
 The response from LLM is displayed in the *yap-response* buffer."
-  (interactive "sPrompt: \nP")
+  (interactive "P")
   (let* ((template (if (equal template '(4)) ; Check if C-u (universal argument) is provided
                        (intern (completing-read "Template: " (mapcar 'car yap-templates)))
                      (or template 'default-prompt))) ; Otherwise, use default template if not provided
+         (prompt (or prompt (yap--maybe-get-prompt template)))
          (llm-messages (yap--get-filled-template prompt template (current-buffer))))
     (if llm-messages
         (let ((response (yap--get-llm-response llm-messages)))
@@ -234,47 +246,33 @@ The response from LLM is displayed in the *yap-response* buffer."
             (message "No changes made.")))
       (message "[ERROR] Failed to get a response from LLM"))))
 
-(defun yap-rewrite (prompt &optional template)
+(defun yap-rewrite (&optional template prompt)
   "Prompt the user with the given PROMPT using TEMPLATE if provided.
 Rewrite the buffer or selection if present with the returned response."
-  (interactive "sPrompt: \nP")
+  (interactive "P")
   (let* ((buffer (current-buffer))
          (template (if (equal template '(4)) ; Check if C-u (universal argument) is provided
                        (intern (completing-read "Template: " (mapcar 'car yap-templates)))
                      (or template 'default-rewrite))) ; Otherwise, use default template if not provided
+         (prompt (or prompt (yap--maybe-get-prompt template)))
          (llm-messages (yap--get-filled-template prompt template buffer)))
     (if llm-messages
         (yap--rewrite-buffer-or-selection (yap--get-llm-response llm-messages) buffer)
       (message "[ERROR] Failed to fill template for prompt: %s" prompt))))
 
-(defun yap-write (prompt &optional template)
+(defun yap-write (&optional template prompt)
   "Prompt the user with the given PROMPT using TEMPLATE if provided.
 Kinda like `yap-rewrite', but just writes instead of replace."
-  (interactive "sPrompt: \nP")
+  (interactive "P")
   (let* ((buffer (current-buffer))
          (template (if (equal template '(4)) ; Check if C-u (universal argument) is provided
                        (intern (completing-read "Template: " (mapcar 'car yap-templates)))
                      (or template 'default-rewrite))) ; Otherwise, use default template if not provided
+         (prompt (or prompt (yap--maybe-get-prompt template)))
          (llm-messages (yap--get-filled-template prompt template buffer)))
     (if llm-messages
         (insert (yap--get-llm-response llm-messages))
       (message "[ERROR] Failed to fill template for prompt: %s" prompt))))
-
-;; TODO: We also need a way to have no prompt version, but for yap-rewrite
-;; The template should specify if it needs a prompt from user and only then should we prompt
-;; We can extend template in a similar way so that it can also override model or other parameters
-(defun yap-do (&optional template)
-  "Similar to `yap-prompt', but only TEMPLATE and no prompt."
-  (interactive)
-  (let* ((buffer (current-buffer))
-         (template (or template (intern (completing-read "Template: " (mapcar 'car yap-templates)))))
-         (llm-messages (yap--get-filled-template "" template buffer)))
-    (if llm-messages
-        (let ((response (yap--get-llm-response llm-messages)))
-          (if response
-              (yap--present-response response)
-            (message "[ERROR] Failed to get a response from LLM")))
-      (message "[ERROR] Failed to fill template"))))
 
 (provide 'yap)
 ;;; yap.el ends here

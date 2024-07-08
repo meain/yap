@@ -32,13 +32,19 @@
 ;; and yap-do so that user won't have the whole set to pick from
 ;; TODO: Maybe leverage https://github.com/f/awesome-chatgpt-prompts
 (defvar yap-templates
-  '((default-prompt . yap-template-prompt)
-    (default-rewrite . yap-template-rewrite)
-    (default-prompt-buffer-context . yap-template-prompt-buffer-context)
-    (default-rewrite-buffer-context . yap-template-rewrite-buffer-context)
+  '((default-prompt . ((prompt . t) (function . yap-template-prompt)))
+    (default-rewrite . ((prompt . t) (function . yap-template-rewrite)))
+
+    (default-prompt-buffer-context . ((prompt . t) (function . yap-template-prompt-buffer-context)))
+    (default-rewrite-buffer-context . ((prompt . t) (function . yap-template-rewrite-buffer-context)))
+
+    ;; Never gets prompt
     (summarize . yap--summarize)
     (explain-code . yap--explain-code)
     (optimize-code . yap--optimize-code)
+
+    ;; Gets prompt if {{prompt}} in the template
+    (joke . "Tell me a joke")
     (who-what . "What or who is {{prompt}}? Provide a summary and 5 bullet points."))
   "A list of yap templates.")
 
