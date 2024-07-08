@@ -16,6 +16,10 @@
   "Explain the code in the specified BUFFER."
   (yap-template-prompt "Explain the code step by step" buffer))
 
+(defun yap--optimize-code (_ buffer)
+  "Explain the code in the specified BUFFER."
+  (yap-template-buffer-context yap--default-system-prompt-for-rewrite "Optimize the provided code" buffer))
+
 (defun yap-template-prompt-buffer-context (prompt buffer)
   "A template for `yap-prompt' using `PROMPT' and `BUFFER' as context."
   (yap-template-buffer-context yap--default-system-prompt-for-prompt prompt buffer))
@@ -34,6 +38,7 @@
     (default-rewrite-buffer-context . yap-template-rewrite-buffer-context)
     (summarize . yap--summarize)
     (explain-code . yap--explain-code)
+    (optimize-code . yap--optimize-code)
     (who-what . "What or who is {{prompt}}? Provide a summary and 5 bullet points."))
   "A list of yap templates.")
 

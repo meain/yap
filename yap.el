@@ -13,6 +13,7 @@
 ;;
 ;; Todo:
 ;; - Add a way to continue a conversation or refactor (save state and reuse)
+;; - Option to retry the last action with a different service/model/template
 
 ;;; Code:
 
@@ -21,13 +22,15 @@
 
 (require 'yap-templates)
 
-;; TODO(meain): add temperature and other controls
+;; TODO: Add support for other services
 (defvar yap-service "openai"
   "The service to use for the yap command.")
 (defvar yap-model "gpt-3.5-turbo"
   "The model to use for the yap command.")
-(defvar yap-api-key nil
-  "The api key to use for the yap command.")
+(defvar yap-api-key:openai nil
+  "The api key to use with OpenAI models in the yap command.")
+(defvar yap-api-key:anthropic nil
+  "The api key to use with Anthropic models in the yap command.")
 (defvar yap-respond-in-buffer nil
   "Whether to respond in a new buffer or the echo area.")
 (defvar yap-respond-in-buffer-threshold 300
@@ -43,12 +46,12 @@
       (alist-get 'message (alist-get 'error object))
     object))
 
-(defun yap--get-models ()
-  "Get the models available for the yap command."
+(defun yap--get-models:openai ()
+  "Get a list of OpenAI models available."
   (let* ((url-request-method "GET")
          (url-request-extra-headers
           `(("Content-Type" . "application/json")
-            ("Authorization" . ,(format "Bearer %s" yap-api-key))))
+            ("Authorization" . ,(format "Bearer %s" yap-api-key:openai))))
          (url-request-data-type 'json)
          (resp (with-current-buffer (url-retrieve-synchronously
                                      "https://api.openai.com/v1/models")
@@ -61,10 +64,25 @@
         (message "[ERROR] Unable to get models: %s" (yap--get-error-message resp))
         nil))))
 
+;; TODO: Not tested
+(defun yap--get-models:anthropic ()
+  "Return a predefined list of models for Anthropic.
+This is a temporary solution until we have a proper API to get models."
+  (list "claude-3-5-sonnet-20240620"
+        "claude-3-opus-20240229"
+        "claude-3-sonnet-20240229"
+        "claude-3-haiku-20240307"))
+
+(defun yap-set-service ()
+  "Set the service to use for the yap command."
+  (interactive)
+  (setq yap-service (completing-read "Service: " '("openai" "anthropic")))
+  (yap-set-model))
+
 (defun yap-set-model ()
   "Fetch models and update the variable."
   (interactive)
-  (if-let* ((models (yap--get-models))
+  (if-let* ((models (yap--get-models:openai))
             (model-names (mapcar (lambda (x) (alist-get 'id x)) models))
             (model-name (completing-read "Model: " model-names)))
       (setq yap-model model-name)))
@@ -77,34 +95,84 @@
               `(("role" . ,role) ("content" . ,content))))
           alist))
 
+(defun yap--convert-alist-sans-system (alist)
+  "Convert ALIST from (role . content) to ((\"role\" . role) (\"content\" . content)) without system."
+  (mapcar (lambda (pair)
+            (let ((role (car pair))
+                  (content (cdr pair)))
+              (if (not (string= role "system"))
+                  `(("role" . ,role) ("content" . ,content))
+                nil)))
+          alist))
+
+(defun yap--system-message (messages)
+  "Check if the given MESSAGES contain a system message."
+  (let ((system-message (seq-find (lambda (pair)
+                                    (string= (car pair) "system"))
+                                  messages)))
+    (if system-message
+        (cdr system-message)
+      nil)))
+
 
 ;; Use `(setq url-debug 1)' to debug things
 ;; TODO: Retain a log of all the messages
+(defun yap--get-llm-response:openai (messages)
+  "Get the response from openai llm for the given set of MESSAGES."
+  (let* ((url-request-method "POST")
+         (url-request-extra-headers
+          `(("Content-Type" . "application/json")
+            ("Authorization" . ,(format "Bearer %s" yap-api-key:openai))))
+         (url-request-data
+          (json-encode
+           `(("model" . ,yap-model)
+             ("messages" . ,(yap--convert-alist messages)))))
+         (url-request-data-type 'json)
+         (resp (with-current-buffer (url-retrieve-synchronously
+                                     "https://api.openai.com/v1/chat/completions")
+                 (goto-char (point-min))
+                 (re-search-forward "^$")
+                 (json-read))))
+    (if (alist-get 'choices resp)
+        (alist-get 'content
+                   (alist-get 'message
+                              (aref (alist-get 'choices resp) 0)))
+      (progn
+        (message "[ERROR] Unable to get response %s" (yap--get-error-message resp))
+        nil))))
+
+;; TODO: Not tested
+(defun yap--get-llm-response:anthropic (messages)
+  "Get the response from anthropic llm for the given set of MESSAGES."
+  (let* ((url-request-method "POST")
+         (url-request-extra-headers
+          `(("Content-Type" . "application/json")
+            ("Authorization" . ,(format "x-api-key: %s" yap-api-key:anthropic))))
+         (url-request-data
+          (json-encode
+           `(("model" . ,yap-model)
+             ("system" . ,(yap--system-message messages))
+             ("messages" . ,(yap--convert-alist-sans-system messages)))))
+         (url-request-data-type 'json)
+         (resp (with-current-buffer (url-retrieve-synchronously
+                                     "https://api.anthropic.com/v1/messages")
+                 (goto-char (point-min))
+                 (re-search-forward "^$")
+                 (json-read))))
+    (if (alist-get 'content resp)
+        (alist-get 'text (aref (alist-get 'content resp) 0))
+      (progn
+        (message "[ERROR] Unable to get response %s" (yap--get-error-message resp))
+        nil))))
+
 (defun yap--get-llm-response (messages)
   "Get the response from llm for the given set of MESSAGES."
   (progn
     (message "Processing request via %s and %s model..." yap-service yap-model)
-    (let* ((url-request-method "POST")
-           (url-request-extra-headers
-            `(("Content-Type" . "application/json")
-              ("Authorization" . ,(format "Bearer %s" yap-api-key))))
-           (url-request-data
-            (json-encode
-             `(("model" . ,yap-model)
-               ("messages" . ,(yap--convert-alist messages)))))
-           (url-request-data-type 'json)
-           (resp (with-current-buffer (url-retrieve-synchronously
-                                       "https://api.openai.com/v1/chat/completions")
-                   (goto-char (point-min))
-                   (re-search-forward "^$")
-                   (json-read))))
-      (if (alist-get 'choices resp)
-          (alist-get 'content
-                     (alist-get 'message
-                                (aref (alist-get 'choices resp) 0)))
-        (progn
-          (message "[ERROR] Unable to get response %s" (yap--get-error-message resp))
-          nil)))))
+    (pcase yap-service
+      ("openai" (yap--get-llm-response:openai messages))
+      ("anthropic" (yap--get-llm-response:anthropic messages))
+      (_ (message "[ERROR] Unsupported service: %s" yap-service) nil))))
 
 (defun yap--present-response (response)
   "Present the RESPONSE in a new buffer or the echo area."
@@ -192,6 +260,9 @@ Kinda like `yap-rewrite', but just writes instead of replace."
         (insert (yap--get-llm-response llm-messages))
       (message "[ERROR] Failed to fill template for prompt: %s" prompt))))
 
+;; TODO: We also need a way to have no prompt version, but for yap-rewrite
+;; The template should specify if it needs a prompt from user and only then should we prompt
+;; We can extend template in a similar way so that it can also override model or other parameters
 (defun yap-do (&optional template)
   "Similar to `yap-prompt', but only TEMPLATE and no prompt."
   (interactive)

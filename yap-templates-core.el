@@ -15,7 +15,8 @@
 ;; - Maybe an option to override model in the template
 ;; - Separate set of prompts for yap-prompt, yap-rewrite and yap-do
 ;; - Maybe use strings as keys for yap-templates instead of symbols
-;; - Templates should be able to set temperature, freq_penalty, max_tokens etc.
+;; - Templates should be able to set temperature, freq_penalty,
+;;   max_tokens etc. (How will this translate to different services?)
 
 ;;; Code:
 
@@ -77,7 +78,7 @@ Order of messages:
                   (buffer-substring-no-properties (point) (point-max)))))
     (if selection
         `(("system" . ,system-prompt)
-          ("user" . (concat "I'll provide a document in which I have highlighted a section. "
+          ("user" . ,(concat "I'll provide a document in which I have highlighted a section. "
                             "Answer for the highlighted section but use the rest of the text as context."))
           ("assistant" . "OK. What is the highlighted text?")
           ("user" . ,(concat "This is the text in the document that is highlighted:\n\n" selection))
