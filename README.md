@@ -8,6 +8,10 @@ or even buffer rewrites.
 
 *Btw, the word yap loosely translates to "do it" in Turkish.*
 
+> [!WARNING]
+> This package is still in its early stages and may have bugs or
+> issues. Please report any problems you encounter.
+
 ---
 
 ## Features
