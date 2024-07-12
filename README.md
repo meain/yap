@@ -66,7 +66,11 @@ Besides this, you have two function `yap-set-service` and
 
 ## Real-World Examples
 
-Here are a few scenarios where `yap` can be especially useful:
+Here are a few scenarios where `yap` can be especially useful. Most of
+the yap templates are optimized to work on a selection and so if you
+want to have it work on the entire buffer, you can just select the
+entire buffer. There are template types which work on whole buffer,
+but the default ones are optimized for selection.
 
 1. **Summarizing Meeting Notes**:
    If you've just finished typing up notes from a meeting and need a concise summary, you can use the `summarize` template.
