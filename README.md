@@ -10,7 +10,8 @@ or even buffer rewrites.
 
 > [!WARNING]
 > This package is still in its early stages and may have bugs or
-> issues. Please report any problems you encounter.
+> issues. Please report any problems you encounter. Also the Anthropic
+> support is untested (they somehow don't like any of my cards).
 
 ---
 
