@@ -13,6 +13,8 @@ or even buffer rewrites.
 > issues. Please report any problems you encounter. Also the Anthropic
 > support is untested (they somehow don't like any of my cards).
 
+https://github.com/user-attachments/assets/b947e1e5-8d34-4dbc-aacd-20a06beb74c7
+
 ---
 
 ## Features

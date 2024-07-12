@@ -32,7 +32,7 @@
   (concat "You are a helpful assistant who helps rewrite/refactor code and prose. "
           "For code responses, just provide the raw code snippet without additional text or markers above or below"
           "as in do not add ``` in the response. "
-          "If asked to rewrite about a highlighted section, only rewrite the highlighted section. ")
+          " Provide the full code to be rewritten and not just the new changes.")
   "The system prompt to use for the `yap-rewrite' command.")
 
 (defun yap--create-messages (system-prompt user-prompt &optional context)
