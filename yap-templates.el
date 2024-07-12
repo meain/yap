@@ -20,14 +20,6 @@
   "Explain the code in the specified BUFFER."
   (yap-template-buffer-context yap--default-system-prompt-for-rewrite "Optimize the provided code" buffer))
 
-(defun yap-template-prompt-buffer-context (prompt buffer)
-  "A template for `yap-prompt' using `PROMPT' and `BUFFER' as context."
-  (yap-template-buffer-context yap--default-system-prompt-for-prompt prompt buffer))
-
-(defun yap-template-rewrite-buffer-context (prompt buffer)
-  "A template for `yap-rewrite' using `PROMPT' and `BUFFER' as context."
-  (yap-template-buffer-context yap--default-system-prompt-for-rewrite prompt buffer))
-
 ;; TODO(meain): different set of templates for yap-prompt, yap-rewrite
 ;; and yap-do so that user won't have the whole set to pick from
 ;; TODO: Maybe leverage https://github.com/f/awesome-chatgpt-prompts

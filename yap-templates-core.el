@@ -29,9 +29,10 @@
   "The system prompt to use for the `yap-prompt' command.")
 
 (defconst yap--default-system-prompt-for-rewrite
-  (concat "You are a helpful assistant who helps rewrite/refactor code and prose."
+  (concat "You are a helpful assistant who helps rewrite/refactor code and prose. "
           "For code responses, just provide the raw code snippet without additional text or markers above or below"
-          "as in do not add ``` in the response.")
+          "as in do not add ``` in the response. "
+          "If asked to rewrite about a highlighted section, only rewrite the highlighted section. ")
   "The system prompt to use for the `yap-rewrite' command.")
 
 (defun yap--create-messages (system-prompt user-prompt &optional context)
@@ -104,6 +105,14 @@ Order of messages:
 (defun yap-template-rewrite (prompt buffer)
   "A simple rewrite template using `PROMPT' and selection in `BUFFER'."
   (yap-template-selection-context yap--default-system-prompt-for-rewrite prompt buffer))
+
+(defun yap-template-prompt-buffer-context (prompt buffer)
+  "A template for `yap-prompt' using `PROMPT' and `BUFFER' as context."
+  (yap-template-buffer-context yap--default-system-prompt-for-prompt prompt buffer))
+
+(defun yap-template-rewrite-buffer-context (prompt buffer)
+  "A template for `yap-rewrite' using `PROMPT' and `BUFFER' as context."
+  (yap-template-buffer-context yap--default-system-prompt-for-rewrite prompt buffer))
 
 (defun yap--get-selected-text (buffer)
   "Get the selected text in the specified BUFFER, if any."
