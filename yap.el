@@ -37,6 +37,8 @@
   "If the response is longer than this, always response in new buffer.")
 (defvar yap-show-diff-before-rewrite t
   "Whether to show the diff before rewriting the buffer.")
+(defvar yap-log-requests nil
+  "Provide a folder to log all the requests and responses.")
 
 (defvar yap--response-buffer "*yap-response*")
 
@@ -169,10 +171,22 @@ This is a temporary solution until we have a proper API to get models."
   "Get the response from llm for the given set of MESSAGES."
   (progn
     (message "Processing request via %s and %s model..." yap-service yap-model)
-    (pcase yap-service
-      ("openai" (yap--get-llm-response:openai messages))
-      ("anthropic" (yap--get-llm-response:anthropic messages))
-      (_ (message "[ERROR] Unsupported service: %s" yap-service) nil))))
+    (let ((reseponse (pcase yap-service
+                       ("openai" (yap--get-llm-response:openai messages))
+                       ("anthropic" (yap--get-llm-response:anthropic messages))
+                       (_ (message "[ERROR] Unsupported service: %s" yap-service) nil))))
+      (progn
+        (when (and reseponse yap-log-requests)
+          (mkdir yap-log-requests t)
+          ;; Save logs to disk
+          (let ((json-data (json-encode `(("service" . ,yap-service)
+                                          ("model" . ,yap-model)
+                                          ("messages" . ,messages)
+                                          ("response" . ,reseponse))))
+                (json-file (format "%s/%s.json" yap-log-requests (format-time-string "%Y%m%d-%H%M%S"))))
+            (with-temp-file json-file
+              (insert json-data))))
+        reseponse))))
 
 (defun yap--present-response (response)
   "Present the RESPONSE in a new buffer or the echo area."
