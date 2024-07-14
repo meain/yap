@@ -49,14 +49,18 @@ Use the with the given `SYSTEM-PROMPT', `USER-PROMPT' and `CONTEXT'."
 
 (defun yap-template-simple (prompt)
   "Generate a simple template for PROMPT."
-  (yap--create-messages yap--default-system-prompt-for-prompt prompt))
+  `(("system" . ,yap--default-system-prompt-for-prompt)
+    ("user" . ,prompt)))
 
 (defun yap-template-selection-context (system-prompt prompt buffer)
   "Create yap template using `SYSTEM-PROMPT', `PROMPT' and `BUFFER'.
 If the buffer has a selection, then the selection is used as context."
   (let* ((selection (yap--get-selected-text buffer))
+         (language (yap--get-buffer-language buffer))
          (context (if selection
-                      (concat  "Use the content below as context for any follow-up tasks:\n\n" selection))))
+                      (if language
+                          (concat "Use the " language " code below as context for any follow-up tasks:\n\n" selection)
+                        (concat  "Use the content below as context for any follow-up tasks:\n\n" selection)))))
     (yap--create-messages system-prompt prompt context)))
 
 (defun yap--get-buffer-language (buffer)
