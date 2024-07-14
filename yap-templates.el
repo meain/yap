@@ -42,6 +42,10 @@
                                "Optimize the provided code"
                                (current-buffer)))
 
+(defun yap-templates--emojify ()
+  "Emojify the selected text in the specified BUFFER."
+  (yap-template-rewrite "Replace words with emojis in the given text."))
+
 (defun yap--retrieve-awesome-chatgpt-prompts (&optional force-update)
   "Retrieve and cache prompts from awesome-chatgpt-prompts.
 The data is cached for a day, unless FORCE-UPDATE is non-nil.
@@ -98,9 +102,11 @@ addition context in case there is user selection present."
     (summarize . yap-temlpates--summarize)
     (explain-code . yap-templates--explain-code)
     (optimize-code . yap-templates--optimize-code)
+    (emojify . yap-templates--emojify)
 
     ;; Gets prompt if {{prompt}} in the template
     (joke . "Tell me a joke")
+    (difference-between . "What is the difference between {{First}} and {{Second}}?")
     (who-what . "What or who is {{Who/What}}? Provide a summary and 5 bullet points."))
   "A list of yap templates.")
 
