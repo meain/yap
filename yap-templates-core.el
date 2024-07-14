@@ -21,18 +21,21 @@
 ;;; Code:
 
 (defconst yap--default-system-prompt-for-prompt
-  (concat "You are a helpful assistant."
-          " Give concise answers to questions."
-          " Don't be too chatty."
-          " Do not ask,suggest follow up questions."
-          " For code blocks mark it with the language name.")
+  (concat "You are a helpful assistant. "
+          "Give concise answers to questions. "
+          "Don't be too chatty. "
+          "Do not ask or suggest follow up questions. "
+          "For code blocks mark it with the language name.")
   "The system prompt to use for the `yap-prompt' command.")
 
 (defconst yap--default-system-prompt-for-rewrite
   (concat "You are a helpful assistant who helps rewrite/refactor code and prose. "
+          "Give concise answers to questions. "
+          "Don't be too chatty. "
+          "Do not ask or suggest follow up questions. "
           "For code responses, just provide the raw code snippet without additional text or markers above or below"
           "as in do not add ``` in the response. "
-          " Provide the full code to be rewritten and not just the new changes.")
+          "Provide the full code to be rewritten and not just the new changes if asked to do code refactor.")
   "The system prompt to use for the `yap-rewrite' command.")
 
 (defun yap--create-messages (system-prompt user-prompt &optional context)
@@ -56,6 +59,13 @@ If the buffer has a selection, then the selection is used as context."
                       (concat  "Use the content below as context for any follow-up tasks:\n\n" selection))))
     (yap--create-messages system-prompt prompt context)))
 
+(defun yap--get-buffer-language (buffer)
+  "Get the programming language associated with the mode of the BUFFER if any."
+  (let ((major-mode (with-current-buffer buffer major-mode)))
+    (if (provided-mode-derived-p major-mode 'prog-mode)
+        (string-trim (string-trim (symbol-name major-mode) nil "-ts-mode") nil "-mode")
+      nil)))
+
 (defun yap-template-buffer-context (system-prompt prompt buffer)
   "Similar to `yap-template-selection-context', but with buffer as context.
 `SYSTEM-PROMPT', `PROMPT' and `BUFFER' serve the same purpose as the
@@ -71,6 +81,8 @@ Order of messages:
 - assistant: what can I help with?
 - user: {{{prompt}}}"
   (let* ((selection (yap--get-selected-text buffer))
+         (language (yap--get-buffer-language buffer))
+         (language-text (if language (concat "The code is in " language ". ")))
          (before (if selection
                      (buffer-substring-no-properties (point-min) (region-beginning))
                    (buffer-substring-no-properties (point-min) (point))))
@@ -80,21 +92,25 @@ Order of messages:
     (if selection
         `(("system" . ,system-prompt)
           ("user" . ,(concat "I'll provide a document in which I have highlighted a section. "
-                             "Answer for the highlighted section but use the rest of the text as context."))
+                             language-text
+                             "Answer should be specific to the highlighted section but use "
+                             "the rest of the text as context to understand the patterns and intent."))
           ("assistant" . "OK. What is the highlighted text?")
-          ("user" . ,(concat "This is the text in the document that is highlighted:\n\n" selection))
+          ("user" . ,selection)
           ("assistant" . "What is there before the highlighted section?")
-          ("user" . ,(concat "Here is the text before: \n\n" before))
+          ("user" . ,before)
           ("assistant" . "What is there after the highlighted section?")
-          ("user" . ,(concat "Here is the text after: \n\n" after))
+          ("user" . ,after)
           ("assistant" . "What can I help you with?")
           ("user" . ,prompt))
       `(("system" . ,system-prompt)
-        ("user" . "I'll provide you context about a document that I am working on. I'm somewhere within the document.")
+        ("user" . ,(concat "I'll provide you context about a document that I am working on. "
+                           "I'm somewhere within the document. Respond with just the request "
+                           "information to be filled in between."))
         ("assistant" . "OK. What comes before your current position?")
-        ("user". ,(concat "Here is the text before the cursor:\n\n" before))
+        ("user". ,before)
         ("assistant" . "What comes after your current position?")
-        ("user" . ,(concat "Here is the text after the cursor:\n\n" after))
+        ("user" . ,after)
         ("assistant" . "What can I help you with?")
         ("user" . ,prompt)))))
 
