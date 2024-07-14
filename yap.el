@@ -22,7 +22,6 @@
 
 (require 'yap-templates)
 
-;; TODO: Add support for other services
 (defvar yap-service "openai"
   "The service to use for the yap command.")
 (defvar yap-model "gpt-3.5-turbo"
@@ -61,12 +60,12 @@
                  (re-search-forward "^$")
                  (json-read))))
     (if (alist-get 'data resp)
-        (alist-get 'data resp)
+        (mapcar (lambda (x) (alist-get 'id x))
+                (alist-get 'data resp))
       (progn
         (message "[ERROR] Unable to get models: %s" (yap--get-error-message resp))
         nil))))
 
-;; TODO: Not tested
 (defun yap--get-models:anthropic ()
   "Return a predefined list of models for Anthropic.
 This is a temporary solution until we have a proper API to get models."
@@ -84,9 +83,10 @@ This is a temporary solution until we have a proper API to get models."
 (defun yap-set-model ()
   "Fetch models and update the variable."
   (interactive)
-  (if-let* ((models (yap--get-models:openai))
-            (model-names (mapcar (lambda (x) (alist-get 'id x)) models))
-            (model-name (completing-read "Model: " model-names)))
+  (if-let* ((models (pcase yap-service
+                      ("openai" (yap--get-models:openai))
+                      ("anthropic" (yap--get-models:anthropic))))
+            (model-name (completing-read "Model: " models)))
       (setq yap-model model-name)))
 
 (defun yap--convert-alist (alist)
