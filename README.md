@@ -112,12 +112,12 @@ This is just a string template. Examples would be:
 
 ``` emacs-lisp
 (joke . "Tell me a joke")
-(who-what . "What or who is {{prompt}}? Provide a summary and 5 bullet points.")
+(who-what . "What or who is {{Who/What}}? Provide a summary and 5 bullet points.")
 ```
 
 These get automatically converted to the right format, and if
-`{{prompt}}` is present in the string, the user is asked for a prompt
-to be included.
+`{{<name>}}` blocks are present in the string, the user is asked for
+an input with `<name>` as the input prompt.
 
 ### Using builtin helpers
 
@@ -134,21 +134,11 @@ There are 4 utility functions that you can leverage as of now:
 Here is an example of using them:
 
 ```emacs-lisp
-(defun document-function (prompt buffer)
+(defun document-function ()
   "My custom template using PROMPT and BUFFER."
-  (yap-template-prompt "Document the function" buffer))
+  (yap-template-prompt "Document the function"))
 
 (add-to-list 'yap-templates '(document-function . document-function))
-```
-
-For these cases, you will have to define if the user has to provide
-additional prompt. You can do that my specifying this when you add the
-the function to the `yap-template` alist.
-
-```emacs-lisp
-(add-to-list 'yap-templates
-        '(document-function . ((prompt . t)
-                               (function . yap-template-prompt))))
 ```
 
 ### Fully custom
@@ -157,38 +147,35 @@ If you think these don't work out for you, you can construct the full
 set of messages yourself. It will look something like this:
 
 ```emacs-lisp
-(defun my-custom-buffer-context-template (prompt buffer)
+(defun my-custom-buffer-context-template ()
   "Custom template using PROMPT and BUFFER as context."
-  (let* ((selection (yap--get-selected-text buffer))
-         (before (if selection
-                     (buffer-substring-no-properties (point-min) (region-beginning))
-                   (buffer-substring-no-properties (point-min) (point))))
-         (after (if selection
-                    (buffer-substring-no-properties (region-end) (point-max))
-                  (buffer-substring-no-properties (point) (point-max)))))
+  (let* ((buffer (current-buffer))
+         (prompt (read-string "Prompt: "))
+         (selection (yap--get-selected-text buffer))
+         (before (yap--get-text-before))
+         (after (yap--get-text-after)))
     (if selection
         `(("system" . "You are a helpful assistant. Provide concise and clear responses.")
           ("user" . "I'll provide a document in which I have highlighted a section. Answer for the highlighted section but use the rest of the text as context.")
           ("assistant" . "OK. What is the highlighted text?")
-          ("user" . ,(concat "This is the text in the document that is highlighted:\n\n" selection))
+          ("user" . ,selection)
           ("assistant" . "What is there before the highlighted section?")
-          ("user" . ,(concat "Here is the text before: \n\n" before))
+          ("user" . ,before)
           ("assistant" . "What is there after the highlighted section?")
-          ("user" . ,(concat "Here is the text after: \n\n" after))
+          ("user" . ,after)
           ("assistant" . "What can I help you with?")
           ("user" . ,prompt))
       `(("system" . "You are a helpful assistant. Provide concise and clear responses.")
         ("user" . "I'll provide you context about a document that I am working on. I'm somewhere within the document.")
         ("assistant" . "OK. What comes before your current position?")
-        ("user" . ,(concat "Here is the text before the cursor:\n\n" before))
+        ("user" . ,before)
         ("assistant" . "What comes after your current position?")
-        ("user" . ,(concat "Here is the text after the cursor:\n\n" after))
+        ("user" . ,after)
         ("assistant" . "What can I help you with?")
         ("user" . ,prompt)))))
 
 (add-to-list 'yap-templates
-             '(custom-buffer-context . ((prompt . t)
-                                        (function . my-custom-buffer-context-template))))
+             '(custom-buffer-context . my-custom-buffer-context-template))
 ```
 
 ---
