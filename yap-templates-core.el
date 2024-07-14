@@ -87,12 +87,8 @@ Order of messages:
   (let* ((selection (yap--get-selected-text buffer))
          (language (yap--get-buffer-language buffer))
          (language-text (if language (concat "The code is in " language ". ")))
-         (before (if selection
-                     (buffer-substring-no-properties (point-min) (region-beginning))
-                   (buffer-substring-no-properties (point-min) (point))))
-         (after (if selection
-                    (buffer-substring-no-properties (region-end) (point-max))
-                  (buffer-substring-no-properties (point) (point-max)))))
+         (before (yap--get-text-before buffer))
+         (after (yap--get-text-after buffer)))
     (if selection
         `(("system" . ,system-prompt)
           ("user" . ,(concat "I'll provide a document in which I have highlighted a section. "
@@ -141,12 +137,25 @@ Order of messages:
 
 (defun yap--get-selected-text (buffer)
   "Get the selected text in the specified BUFFER, if any."
-  (interactive)
   (with-current-buffer buffer
     (if (region-active-p)
         (let ((selection (buffer-substring (region-beginning) (region-end))))
           selection)
       nil)))
+
+(defun yap--get-text-before (buffer)
+  "Get the text before the point or selection in the specified BUFFER."
+  (with-current-buffer buffer
+    (if (region-active-p)
+        (buffer-substring-no-properties (point-min) (region-beginning))
+      (buffer-substring-no-properties (point-min) (point)))))
+
+(defun yap--get-text-after (buffer)
+  "Get the text after the point or selection in the specified BUFFER."
+  (with-current-buffer buffer
+    (if (region-active-p)
+        (buffer-substring-no-properties (region-end) (point-max))
+      (buffer-substring-no-properties (point) (point-max)))))
 
 (defun yap-template--string (template)
   "Replace all {{key}} placeholders in TEMPLATE with user input."
