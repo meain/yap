@@ -118,7 +118,6 @@ This is a temporary solution until we have a proper API to get models."
 
 
 ;; Use `(setq url-debug 1)' to debug things
-;; TODO: Retain a log of all the messages
 (defun yap--get-llm-response:openai (messages)
   "Get the response from openai llm for the given set of MESSAGES."
   (let* ((url-request-method "POST")
@@ -132,6 +131,7 @@ This is a temporary solution until we have a proper API to get models."
          (url-request-data-type 'json)
          (resp (with-current-buffer (url-retrieve-synchronously
                                      "https://api.openai.com/v1/chat/completions")
+                 (set-buffer-multibyte t)   ;; This fixes accented characters and emojis
                  (goto-char (point-min))
                  (re-search-forward "^$")
                  (json-read))))
@@ -158,6 +158,7 @@ This is a temporary solution until we have a proper API to get models."
          (url-request-data-type 'json)
          (resp (with-current-buffer (url-retrieve-synchronously
                                      "https://api.anthropic.com/v1/messages")
+                 (set-buffer-multibyte t)   ;; This fixes accented characters and emojis
                  (goto-char (point-min))
                  (re-search-forward "^$")
                  (json-read))))
