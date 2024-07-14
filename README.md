@@ -9,9 +9,9 @@ or even buffer rewrites.
 *Btw, the word yap loosely translates to "do it" in Turkish.*
 
 > [!WARNING]
-> This package is still in its early stages and may have bugs or
-> issues. Please report any problems you encounter. Also the Anthropic
-> support is untested (they somehow don't like any of my cards).
+> This package is in very early stages of development. I'm still
+> squashing bugs and figuring out the best interface. If you have any
+> suggestions or feedback, please let me know.
 
 https://github.com/user-attachments/assets/b947e1e5-8d34-4dbc-aacd-20a06beb74c7
 

@@ -4,6 +4,9 @@
 ;; This file contains templates for yap.  This is just a starting
 ;; point.  Users are encouraged and expected to create more templates
 ;; as they see fit.
+;;
+;; TODO curated prompts additions:
+;; - https://github.com/mustvlad/ChatGPT-System-Prompts
 
 ;;; Code:
 (require 'yap-templates-core)
