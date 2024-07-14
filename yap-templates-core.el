@@ -118,21 +118,26 @@ Order of messages:
         ("assistant" . "What can I help you with?")
         ("user" . ,prompt)))))
 
-(defun yap-template-prompt (prompt buffer)
-  "A simple prompt template using `PROMPT' and selection in `BUFFER'."
-  (yap-template-selection-context yap--default-system-prompt-for-prompt prompt buffer))
+(defun yap-template-prompt (prompt)
+  "A simple prompt template using `PROMPT'."
+  (yap-template-selection-context yap--default-system-prompt-for-prompt prompt (current-buffer)))
 
-(defun yap-template-rewrite (prompt buffer)
-  "A simple rewrite template using `PROMPT' and selection in `BUFFER'."
-  (yap-template-selection-context yap--default-system-prompt-for-rewrite prompt buffer))
+(defun yap-template-rewrite (prompt)
+  "A simple rewrite template using `PROMPT'."
+  (yap-template-selection-context yap--default-system-prompt-for-rewrite prompt (current-buffer)))
 
-(defun yap-template-prompt-buffer-context (prompt buffer)
-  "A template for `yap-prompt' using `PROMPT' and `BUFFER' as context."
-  (yap-template-buffer-context yap--default-system-prompt-for-prompt prompt buffer))
+(defun yap-template-prompt-buffer-context (prompt)
+  "A template for `yap-prompt' using `PROMPT' and buffer contents as context."
+  (yap-template-buffer-context yap--default-system-prompt-for-prompt prompt (current-buffer)))
 
-(defun yap-template-rewrite-buffer-context (prompt buffer)
-  "A template for `yap-rewrite' using `PROMPT' and `BUFFER' as context."
-  (yap-template-buffer-context yap--default-system-prompt-for-rewrite prompt buffer))
+(defun yap-template-rewrite-buffer-context (prompt)
+  "A template for `yap-rewrite' using `PROMPT' and buffer contents as context."
+  (yap-template-buffer-context yap--default-system-prompt-for-rewrite prompt (current-buffer)))
+
+(defun yap-with-prompt (func)
+  "Wrap a `FUNC' with a prompt."
+  (let ((prompt (read-string "Prompt: " nil t (current-word))))
+    (funcall func prompt)))
 
 (defun yap--get-selected-text (buffer)
   "Get the selected text in the specified BUFFER, if any."
@@ -143,14 +148,26 @@ Order of messages:
           selection)
       nil)))
 
-(defun yap--get-filled-template (prompt template buffer)
-  "Get the filled `TEMPLATE' for the provided `PROMPT'."
+(defun yap-template--string (template)
+  "Replace all {{key}} placeholders in TEMPLATE with user input."
+  (let ((start 0)
+        (result template))
+    (while (string-match "{{\\([^}]+\\)}}" result start)
+      (let* ((key (match-string 1 result))
+             (prompt (format "%s: " key))
+             (replacement (read-string prompt)))
+        (setq result (string-replace (format "{{%s}}" key) replacement result))
+        (setq start (match-end 0))))
+    result))
+
+(defun yap--get-filled-template (template)
+  "Get the filled `TEMPLATE'."
   (let ((yap-template (alist-get template yap-templates)))
     (if (functionp yap-template)
-        (funcall yap-template prompt buffer)
+        (funcall yap-template)
       (if (stringp yap-template)
-          (yap-template-simple (string-replace "{{prompt}}" prompt yap-template))
-        (funcall (alist-get 'function yap-template) prompt buffer)))))
+          (yap-template-simple (yap-template--string yap-template))
+        (error "Invalid template type")))))
 
 (provide 'yap-templates-core)
 ;;; yap-templates-core.el ends here

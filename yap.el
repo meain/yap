@@ -201,17 +201,6 @@ This is a temporary solution until we have a proper API to get models."
               (markdown-mode))))
     (message response)))
 
-(defun yap--maybe-get-prompt (template)
-  "Get the prompt from the user if the TEMPLATE requires it."
-  (let* ((yap-template (alist-get template yap-templates))
-         (prompt (if (equal (type-of yap-template) 'cons)
-                     (alist-get 'prompt yap-template)
-                   (if (equal (type-of yap-template) 'symbol)
-                       nil
-                     (string-search "{{prompt}}" yap-template)))))
-    (if prompt (read-string "Prompt: ")
-      nil)))
-
 (defun yap-prompt (&optional template prompt)
   "Prompt the user with the given PROMPT using TEMPLATE if provided.
 If TEMPLATE is not provided or nil, use the default template.
@@ -221,8 +210,7 @@ The response from LLM is displayed in the *yap-response* buffer."
   (let* ((template (if (equal template '(4)) ; Check if C-u (universal argument) is provided
                        (intern (completing-read "Template: " (mapcar 'car yap-templates)))
                      (or template 'default-prompt))) ; Otherwise, use default template if not provided
-         (prompt (or prompt (yap--maybe-get-prompt template)))
-         (llm-messages (yap--get-filled-template prompt template (current-buffer))))
+         (llm-messages (yap--get-filled-template template)))
     (if llm-messages
         (let ((response (yap--get-llm-response llm-messages)))
           (if response
@@ -264,26 +252,22 @@ The response from LLM is displayed in the *yap-response* buffer."
   "Prompt the user with the given PROMPT using TEMPLATE if provided.
 Rewrite the buffer or selection if present with the returned response."
   (interactive "P")
-  (let* ((buffer (current-buffer))
-         (template (if (equal template '(4)) ; Check if C-u (universal argument) is provided
+  (let* ((template (if (equal template '(4)) ; Check if C-u (universal argument) is provided
                        (intern (completing-read "Template: " (mapcar 'car yap-templates)))
                      (or template 'default-rewrite))) ; Otherwise, use default template if not provided
-         (prompt (or prompt (yap--maybe-get-prompt template)))
-         (llm-messages (yap--get-filled-template prompt template buffer)))
+         (llm-messages (yap--get-filled-template template)))
     (if llm-messages
-        (yap--rewrite-buffer-or-selection (yap--get-llm-response llm-messages) buffer)
+        (yap--rewrite-buffer-or-selection (yap--get-llm-response llm-messages) (current-buffer))
       (message "[ERROR] Failed to fill template for prompt: %s" prompt))))
 
 (defun yap-write (&optional template prompt)
   "Prompt the user with the given PROMPT using TEMPLATE if provided.
 Kinda like `yap-rewrite', but just writes instead of replace."
   (interactive "P")
-  (let* ((buffer (current-buffer))
-         (template (if (equal template '(4)) ; Check if C-u (universal argument) is provided
+  (let* ((template (if (equal template '(4)) ; Check if C-u (universal argument) is provided
                        (intern (completing-read "Template: " (mapcar 'car yap-templates)))
                      (or template 'default-rewrite))) ; Otherwise, use default template if not provided
-         (prompt (or prompt (yap--maybe-get-prompt template)))
-         (llm-messages (yap--get-filled-template prompt template buffer)))
+         (llm-messages (yap--get-filled-template template)))
     (if llm-messages
         (insert (yap--get-llm-response llm-messages))
       (message "[ERROR] Failed to fill template for prompt: %s" prompt))))

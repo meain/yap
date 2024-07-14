@@ -12,17 +12,35 @@
 (require 'yap-templates-core)
 (require 'yap-utils)
 
-(defun yap-temlpates--summarize (_ buffer)
+(defun yap-template-prompt--default ()
+  "A default template for `yap-prompt'."
+  (yap-with-prompt #'yap-template-prompt))
+
+(defun yap-template-rewrite--default ()
+  "A default template for `yap-rewrite'."
+  (yap-with-prompt #'yap-template-rewrite))
+
+(defun yap-template-prompt-buffer-context--default ()
+  "A default template for `yap-prompt' with buffer context."
+  (yap-with-prompt #'yap-template-prompt-buffer-context))
+
+(defun yap-template-rewrite-buffer-context--default ()
+  "A default template for `yap-rewrite' with buffer context."
+  (yap-with-prompt #'yap-template-rewrite-buffer-context))
+
+(defun yap-temlpates--summarize ()
   "Summarize the selected text in the specified BUFFER."
-  (yap-template-prompt "Summarize the given text. Use bullet points for key ideas." buffer))
+  (yap-template-prompt "Summarize the given text. Use bullet points for key ideas."))
 
-(defun yap-templates--explain-code (_ buffer)
+(defun yap-templates--explain-code ()
   "Explain the code in the specified BUFFER."
-  (yap-template-prompt "Explain the code step by step" buffer))
+  (yap-template-prompt "Explain the code step by step"))
 
-(defun yap-templates--optimize-code (_ buffer)
+(defun yap-templates--optimize-code ()
   "Explain the code in the specified BUFFER."
-  (yap-template-buffer-context yap--default-system-prompt-for-rewrite "Optimize the provided code" buffer))
+  (yap-template-buffer-context yap--default-system-prompt-for-rewrite
+                               "Optimize the provided code"
+                               (current-buffer)))
 
 (defun yap--retrieve-awesome-chatgpt-prompts (&optional force-update)
   "Retrieve and cache prompts from awesome-chatgpt-prompts.
@@ -54,36 +72,36 @@ Source: https://raw.githubusercontent.com/f/awesome-chatgpt-prompts/main/prompts
               (cons (car columns) (cadr columns))))
           lines))))
 
-(defun yap-templates--awesome-chatgpt-prompts (_ buffer)
+(defun yap-templates--awesome-chatgpt-prompts ()
   "Generate a template using prompt form f/awesome-chatgpt-prompts.
 PROMPT is follow up user prompt and BUFFER is used to provide
 addition context in case there is user selection present."
   ;; NOTE: Not all of these oens are directly usable, but this is better than nothing.
   (let* ((awesome-chatgpt-prompt (yap--retrieve-awesome-chatgpt-prompts))
-         (selected-prompt (completing-read "Select a system-prompt: " awesome-chatgpt-prompt nil t))
+         (selected-prompt (completing-read "Persona: " awesome-chatgpt-prompt nil t))
          (prompt (read-string "Prompt: "))) ; prompt is asked here as we need to know the system prompt
-    (yap-template-selection-context selected-prompt prompt buffer)))
+    (yap-template-selection-context selected-prompt prompt (current-buffer))))
 
 ;; TODO(meain): different set of templates for yap-prompt, yap-rewrite
 ;; and yap-do so that user won't have the whole set to pick from
 (defvar yap-templates
-  '((default-prompt . ((prompt . t) (function . yap-template-prompt)))
-    (default-rewrite . ((prompt . t) (function . yap-template-rewrite)))
-
-    (default-prompt-buffer-context . ((prompt . t) (function . yap-template-prompt-buffer-context)))
-    (default-rewrite-buffer-context . ((prompt . t) (function . yap-template-rewrite-buffer-context)))
+  '(;; Generic
+    (default-prompt . yap-template-prompt--default)
+    (default-rewrite . yap-template-rewrite--default)
+    (default-prompt-buffer-context . yap-template-prompt-buffer-context--default)
+    (default-rewrite-buffer-context . yap-template-rewrite-buffer-context--default)
 
     ;; Community
     (community:awesome-chatgpt-prompts .  yap-templates--awesome-chatgpt-prompts)
 
-    ;; Never gets prompt
+    ;; Biuiltins
     (summarize . yap-temlpates--summarize)
     (explain-code . yap-templates--explain-code)
     (optimize-code . yap-templates--optimize-code)
 
     ;; Gets prompt if {{prompt}} in the template
     (joke . "Tell me a joke")
-    (who-what . "What or who is {{prompt}}? Provide a summary and 5 bullet points."))
+    (who-what . "What or who is {{Who/What}}? Provide a summary and 5 bullet points."))
   "A list of yap templates.")
 
 (provide 'yap-templates)
