@@ -190,17 +190,35 @@ This is a temporary solution until we have a proper API to get models."
         reseponse))))
 
 (defun yap--present-response (response)
-  "Present the RESPONSE in a new buffer or the echo area."
-  (if (or yap-respond-in-buffer (> (length response) yap-respond-in-buffer-threshold))
-      (progn
-        (with-current-buffer (get-buffer-create yap--response-buffer)
-          (erase-buffer)
-          (insert response)
-          (display-buffer (current-buffer))
-          ;; Enable markdown mode if available
-          (if (fboundp 'markdown-mode)
-              (markdown-mode))))
-    (message response)))
+  "Present the RESPONSE in a posframe or a new buffer, defaulting to the echo area.
+You can always call `yap-display-output-buffer' to view the output in
+a separate buffer."
+  (let ((buffer (get-buffer-create yap--response-buffer)))
+    (with-current-buffer buffer
+      (erase-buffer)
+      (insert response)
+      ;; Enable markdown mode if available
+      (if (fboundp 'markdown-mode) (markdown-mode)))
+    (if (or yap-respond-in-buffer (> (length response) yap-respond-in-buffer-threshold))
+        (display-buffer buffer)
+      (if (and (featurep 'posframe) (fboundp 'posframe-show))
+          (posframe-show " *yap-response*"
+                         :string response
+                         :timeout 5
+                         :border-width 2
+                         :min-width 36
+                         :max-width fill-column
+                         :min-height 1
+                         :left-fringe 8
+                         :right-fringe 8
+                         :border-color (face-attribute 'vertical-border :foreground)
+                         :position (point))
+        (message response)))))
+
+(defun yap-display-output-buffer ()
+  "Display the output buffer for yap."
+  (interactive)
+  (display-buffer yap--response-buffer))
 
 (defun yap-prompt (&optional template prompt)
   "Prompt the user with the given PROMPT using TEMPLATE if provided.
