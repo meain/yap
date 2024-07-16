@@ -46,6 +46,14 @@
   "Emojify the selected text in the specified BUFFER."
   (yap-template-rewrite "Replace words with emojis in the given text."))
 
+(defun yap-templates--who-what ()
+  "Generate a template for who/what question."
+  (let* ((selection (yap--get-selected-text (current-buffer)))
+         (input (if selection
+                    selection
+                  (read-string "What or who: " (thing-at-point 'word)))))
+    (yap-template-prompt (concat "What or who is " input "? Provide a summary and 5 bullet points."))))
+
 (defun yap--retrieve-awesome-chatgpt-prompts (&optional force-update)
   "Retrieve and cache prompts from awesome-chatgpt-prompts.
 The data is cached for a day, unless FORCE-UPDATE is non-nil.
@@ -103,11 +111,11 @@ addition context in case there is user selection present."
     (explain-code . yap-templates--explain-code)
     (optimize-code . yap-templates--optimize-code)
     (emojify . yap-templates--emojify)
+    (who-what . yap-templates--who-what)
 
     ;; Gets prompt if {{prompt}} in the template
     (joke . "Tell me a joke")
-    (difference-between . "What is the difference between {{First}} and {{Second}}?")
-    (who-what . "What or who is {{Who/What}}? Provide a summary and 5 bullet points."))
+    (difference-between . "What is the difference between {{First}} and {{Second}}?"))
   "A list of yap templates.")
 
 (provide 'yap-templates)
