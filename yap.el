@@ -227,7 +227,7 @@ If invoked with a universal argument (C-u), prompt for TEMPLATE selection.
 The response from LLM is displayed in the *yap-response* buffer."
   (interactive "P")
   (let* ((template (if (equal template '(4)) ; Check if C-u (universal argument) is provided
-                       (intern (completing-read "Template: " (mapcar 'car yap-templates)))
+                       (intern (completing-read "Template: " (mapcar 'car yap-templates) nil t))
                      (or template 'default-prompt))) ; Otherwise, use default template if not provided
          (llm-messages (yap--get-filled-template template)))
     (if llm-messages
@@ -272,7 +272,7 @@ The response from LLM is displayed in the *yap-response* buffer."
 Rewrite the buffer or selection if present with the returned response."
   (interactive "P")
   (let* ((template (if (equal template '(4)) ; Check if C-u (universal argument) is provided
-                       (intern (completing-read "Template: " (mapcar 'car yap-templates)))
+                       (intern (completing-read "Template: " (mapcar 'car yap-templates) nil t))
                      (or template 'default-rewrite))) ; Otherwise, use default template if not provided
          (llm-messages (yap--get-filled-template template)))
     (if llm-messages
@@ -284,7 +284,7 @@ Rewrite the buffer or selection if present with the returned response."
 Kinda like `yap-rewrite', but just writes instead of replace."
   (interactive "P")
   (let* ((template (if (equal template '(4)) ; Check if C-u (universal argument) is provided
-                       (intern (completing-read "Template: " (mapcar 'car yap-templates)))
+                       (intern (completing-read "Template: " (mapcar 'car yap-templates) nil t))
                      (or template 'default-rewrite))) ; Otherwise, use default template if not provided
          (llm-messages (yap--get-filled-template template)))
     (if llm-messages
