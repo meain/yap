@@ -29,21 +29,21 @@
   (yap-with-prompt #'yap-template-rewrite-buffer-context))
 
 (defun yap-temlpates--summarize ()
-  "Summarize the selected text in the specified BUFFER."
+  "Summarize the selected text."
   (yap-template-prompt "Summarize the given text. Use bullet points for key ideas."))
 
 (defun yap-templates--explain-code ()
-  "Explain the code in the specified BUFFER."
+  "Explain selected code."
   (yap-template-prompt "Explain the code step by step"))
 
 (defun yap-templates--optimize-code ()
-  "Explain the code in the specified BUFFER."
+  "Optimize selected code."
   (yap-template-buffer-context yap--default-system-prompt-for-rewrite
                                "Optimize the provided code"
                                (current-buffer)))
 
 (defun yap-templates--emojify ()
-  "Emojify the selected text in the specified BUFFER."
+  "Emojify the selected text."
   (yap-template-rewrite (concat "Replace words with emojis in the given text. "
                                 "Do not give me code to do so. "
                                 "Only provide the emojified version with nothing else.")))
@@ -88,9 +88,8 @@ Source: https://raw.githubusercontent.com/f/awesome-chatgpt-prompts/main/prompts
 
 (defun yap-templates--awesome-chatgpt-prompts ()
   "Generate a template using prompt form f/awesome-chatgpt-prompts.
-PROMPT is follow up user prompt and BUFFER is used to provide
-addition context in case there is user selection present."
-  ;; NOTE: Not all of these oens are directly usable, but this is better than nothing.
+PROMPT is follow up user prompt."
+  ;; NOTE: Not all of these ones are directly usable, but here goes nothing.
   (let* ((awesome-chatgpt-prompt (yap--retrieve-awesome-chatgpt-prompts))
          (selected-prompt (completing-read "Persona: " awesome-chatgpt-prompt nil t))
          (prompt (read-string "Prompt: "))) ; prompt is asked here as we need to know the system prompt
