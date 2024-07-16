@@ -44,7 +44,9 @@
 
 (defun yap-templates--emojify ()
   "Emojify the selected text in the specified BUFFER."
-  (yap-template-rewrite "Replace words with emojis in the given text."))
+  (yap-template-rewrite (concat "Replace words with emojis in the given text. "
+                                "Do not give me code to do so. "
+                                "Only provide the emojified version with nothing else.")))
 
 (defun yap-templates--who-what ()
   "Generate a template for who/what question."
