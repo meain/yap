@@ -38,6 +38,11 @@
   "Whether to show the diff before rewriting the buffer.")
 (defvar yap-log-requests nil
   "Provide a folder to log all the requests and responses.")
+(defvar yap-popup-timeout 5
+  "The time in seconds to show the popup for.")
+(defvar yap-no-popup nil
+  "Whether to show the response in a popup or not.
+If non-nil, it will use the echo area.")
 
 (defvar yap--response-buffer "*yap-response*")
 
@@ -201,10 +206,10 @@ a separate buffer."
       (if (fboundp 'markdown-mode) (markdown-mode)))
     (if (or yap-respond-in-buffer (> (length response) yap-respond-in-buffer-threshold))
         (display-buffer buffer)
-      (if (and (featurep 'posframe) (fboundp 'posframe-show))
+      (if (and (featurep 'posframe) (fboundp 'posframe-show) (not yap-no-popup))
           (posframe-show " *yap-response*"
                          :string response
-                         :timeout 5
+                         :timeout yap-popup-timeout
                          :border-width 2
                          :min-width 36
                          :max-width fill-column
