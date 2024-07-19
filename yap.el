@@ -94,23 +94,23 @@ This is a temporary solution until we have a proper API to get models."
             (model-name (completing-read "Model: " models)))
       (setq yap-model model-name)))
 
-(defun yap--convert-alist (alist)
-  "Convert ALIST from (role . content) to ((\"role\" . role) (\"content\" . content))."
+(defun yap--convert-messages (messages)
+  "Convert MESSAGES from (role . content) to OpenAI format."
   (mapcar (lambda (pair)
             (let ((role (car pair))
                   (content (cdr pair)))
               `(("role" . ,role) ("content" . ,content))))
-          alist))
+          messages))
 
-(defun yap--convert-alist-sans-system (alist)
-  "Convert ALIST from (role . content) to ((\"role\" . role) (\"content\" . content)) without system."
+(defun yap--convert-alist-sans-system (messages)
+  "Convert MESSAGES from (role . content) to OpenAI format, without system message."
   (mapcar (lambda (pair)
             (let ((role (car pair))
                   (content (cdr pair)))
               (if (not (string= role "system"))
                   `(("role" . ,role) ("content" . ,content))
                 nil)))
-          alist))
+          messages))
 
 (defun yap--system-message (messages)
   "Check if the given MESSAGES contain a system message."
@@ -224,7 +224,7 @@ a separate buffer."
   (interactive)
   (display-buffer yap--response-buffer))
 
-(defun yap-prompt (&optional template prompt)
+(defun yap-prompt (&optional template)
   "Prompt the user with the given PROMPT using TEMPLATE if provided.
 If TEMPLATE is not provided or nil, use the default template.
 If invoked with a universal argument (C-u), prompt for TEMPLATE selection.
@@ -239,7 +239,7 @@ The response from LLM is displayed in the *yap-response* buffer."
           (if response
               (yap--present-response response)
             (message "[ERROR] Failed to get a response from LLM")))
-      (message "[ERROR] Failed to fill template for prompt: %s" prompt))))
+      (message "[ERROR] Failed to fill template"))))
 
 (defun yap--show-diff (before after)
   "Show the diff between BEFORE and AFTER."
@@ -271,7 +271,7 @@ The response from LLM is displayed in the *yap-response* buffer."
             (message "No changes made.")))
       (message "[ERROR] Failed to get a response from LLM"))))
 
-(defun yap-rewrite (&optional template prompt)
+(defun yap-rewrite (&optional template)
   "Prompt the user with the given PROMPT using TEMPLATE if provided.
 Rewrite the buffer or selection if present with the returned response."
   (interactive "P")
@@ -281,9 +281,9 @@ Rewrite the buffer or selection if present with the returned response."
          (llm-messages (yap--get-filled-template template)))
     (if llm-messages
         (yap--rewrite-buffer-or-selection (yap--get-llm-response llm-messages) (current-buffer))
-      (message "[ERROR] Failed to fill template for prompt: %s" prompt))))
+      (message "[ERROR] Failed to fill template"))))
 
-(defun yap-write (&optional template prompt)
+(defun yap-write (&optional template)
   "Prompt the user with the given PROMPT using TEMPLATE if provided.
 Kinda like `yap-rewrite', but just writes instead of replace."
   (interactive "P")
@@ -293,7 +293,7 @@ Kinda like `yap-rewrite', but just writes instead of replace."
          (llm-messages (yap--get-filled-template template)))
     (if llm-messages
         (insert (yap--get-llm-response llm-messages))
-      (message "[ERROR] Failed to fill template for prompt: %s" prompt))))
+      (message "[ERROR] Failed to fill template"))))
 
 (provide 'yap)
 ;;; yap.el ends here
