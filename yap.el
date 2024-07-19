@@ -27,13 +27,13 @@
 (defvar yap-model "gpt-4o-mini"
   "The model to use for the yap command.")
 (defvar yap-api-key:openai nil
-  "The api key to use with OpenAI models in the yap command.")
+  "The API key to use with OpenAI models in the yap command.")
 (defvar yap-api-key:anthropic nil
-  "The api key to use with Anthropic models in the yap command.")
+  "The API key to use with Anthropic models in the yap command.")
 (defvar yap-respond-in-buffer nil
   "Whether to respond in a new buffer or the echo area.")
 (defvar yap-respond-in-buffer-threshold 300
-  "If the response is longer than this, always response in new buffer.")
+  "If the response is longer than this, always respond in a new buffer.")
 (defvar yap-show-diff-before-rewrite t
   "Whether to show the diff before rewriting the buffer.")
 (defvar yap-log-requests nil
@@ -47,7 +47,7 @@ If non-nil, it will use the echo area.")
 (defvar yap--response-buffer "*yap-response*")
 
 (defun yap--get-error-message (object)
-  "Parse out error message from the `OBJECT' if possible."
+  "Parse out error message from the OBJECT if possible."
   (if (alist-get 'error object)
       (alist-get 'message (alist-get 'error object))
     object))
@@ -121,10 +121,9 @@ This is a temporary solution until we have a proper API to get models."
         (cdr system-message)
       nil)))
 
-
 ;; Use `(setq url-debug 1)' to debug things
 (defun yap--get-llm-response:openai (messages)
-  "Get the response from openai llm for the given set of MESSAGES."
+  "Get the response from OpenAI LLM for the given set of MESSAGES."
   (let* ((url-request-method "POST")
          (url-request-extra-headers
           `(("Content-Type" . "application/json")
@@ -150,7 +149,7 @@ This is a temporary solution until we have a proper API to get models."
 
 ;; TODO: Not tested
 (defun yap--get-llm-response:anthropic (messages)
-  "Get the response from anthropic llm for the given set of MESSAGES."
+  "Get the response from Anthropic LLM for the given set of MESSAGES."
   (let* ((url-request-method "POST")
          (url-request-extra-headers
           `(("Content-Type" . "application/json")
@@ -174,25 +173,25 @@ This is a temporary solution until we have a proper API to get models."
         nil))))
 
 (defun yap--get-llm-response (messages)
-  "Get the response from llm for the given set of MESSAGES."
+  "Get the response from LLM for the given set of MESSAGES."
   (progn
     (message "Processing request via %s and %s model..." yap-service yap-model)
-    (let ((reseponse (pcase yap-service
+    (let ((response (pcase yap-service
                        ("openai" (yap--get-llm-response:openai messages))
                        ("anthropic" (yap--get-llm-response:anthropic messages))
                        (_ (message "[ERROR] Unsupported service: %s" yap-service) nil))))
       (progn
-        (when (and reseponse yap-log-requests)
+        (when (and response yap-log-requests)
           (mkdir yap-log-requests t)
           ;; Save logs to disk
           (let ((json-data (json-encode `(("service" . ,yap-service)
                                           ("model" . ,yap-model)
                                           ("messages" . ,messages)
-                                          ("response" . ,reseponse))))
+                                          ("response" . ,response))))
                 (json-file (format "%s/%s.json" yap-log-requests (format-time-string "%Y%m%d-%H%M%S"))))
             (with-temp-file json-file
               (insert json-data))))
-        reseponse))))
+        response))))
 
 (defun yap--present-response (response)
   "Present the RESPONSE in a posframe or a new buffer, defaulting to the echo area.
