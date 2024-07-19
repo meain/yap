@@ -24,7 +24,7 @@
 
 (defvar yap-service "openai"
   "The service to use for the yap command.")
-(defvar yap-model "gpt-3.5-turbo"
+(defvar yap-model "gpt-4o-mini"
   "The model to use for the yap command.")
 (defvar yap-api-key:openai nil
   "The api key to use with OpenAI models in the yap command.")
