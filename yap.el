@@ -128,10 +128,11 @@ This is a temporary solution until we have a proper API to get models."
          (url-request-extra-headers
           `(("Content-Type" . "application/json")
             ("Authorization" . ,(format "Bearer %s" yap-api-key:openai))))
-         (url-request-data
-          (json-encode
-           `(("model" . ,yap-model)
-             ("messages" . ,(yap--convert-alist messages)))))
+         (json-data (json-encode
+                     `(("model" . ,yap-model)
+                       ("messages" . ,(yap--convert-alist messages)))))
+         ;; https://github.com/pythonic-emacs/anaconda-mode/issues/189
+         (url-request-data (encode-coding-string json-data 'us-ascii)) ;; TODO: shouldn't this be utf-8
          (url-request-data-type 'json)
          (resp (with-current-buffer (url-retrieve-synchronously
                                      "https://api.openai.com/v1/chat/completions")
@@ -154,11 +155,12 @@ This is a temporary solution until we have a proper API to get models."
          (url-request-extra-headers
           `(("Content-Type" . "application/json")
             ("Authorization" . ,(format "x-api-key: %s" yap-api-key:anthropic))))
-         (url-request-data
+         (json-data
           (json-encode
            `(("model" . ,yap-model)
              ("system" . ,(yap--system-message messages))
              ("messages" . ,(yap--convert-alist-sans-system messages)))))
+         (url-request-data (encode-coding-string json-data 'us-ascii)
          (url-request-data-type 'json)
          (resp (with-current-buffer (url-retrieve-synchronously
                                      "https://api.anthropic.com/v1/messages")
@@ -177,9 +179,9 @@ This is a temporary solution until we have a proper API to get models."
   (progn
     (message "Processing request via %s and %s model..." yap-service yap-model)
     (let ((response (pcase yap-service
-                       ("openai" (yap--get-llm-response:openai messages))
-                       ("anthropic" (yap--get-llm-response:anthropic messages))
-                       (_ (message "[ERROR] Unsupported service: %s" yap-service) nil))))
+                      ("openai" (yap--get-llm-response:openai messages))
+                      ("anthropic" (yap--get-llm-response:anthropic messages))
+                      (_ (message "[ERROR] Unsupported service: %s" yap-service) nil))))
       (progn
         (when (and response yap-log-requests)
           (mkdir yap-log-requests t)
