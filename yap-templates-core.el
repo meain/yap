@@ -132,7 +132,7 @@ Order of messages:
 
 (defun yap-with-prompt (func)
   "Wrap a `FUNC' with a prompt."
-  (let ((prompt (read-string "Prompt: " nil t (current-word))))
+  (let ((prompt (read-string "Prompt: " nil 'yap-prompt-history (current-word))))
     (funcall func prompt)))
 
 (defun yap--get-selected-text (buffer)
