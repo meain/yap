@@ -56,6 +56,21 @@
                   (read-string "What or who: " (thing-at-point 'word)))))
     (yap-template-prompt (concat "What or who is " input "? Provide a summary and 5 bullet points."))))
 
+(defun yap-templates--summarize-webpage ()
+  "Accepts a url and summarizes the contents.
+It first fetches the content of the webpage, uses readable cli to
+extract the main content and then summarizes it."
+  (let* ((url (read-string "URL: "))
+         (content (shell-command-to-string (format "readable %s" url))))
+    `(("system" . ,(concat "You are Summarizer AI. You help summarize websites. I'll provide you with the content and the url."
+                          "Give a 2 line summary at the top with a point by point breakdown of the article (max 10 points). "
+                          "Use markdown when necessary. Retain the relative order in which data is presented in the article. Use emojies to make it more engaging. "
+                          "No need to have headers like Article summary or point by point breakdown."))
+      ("assistant" . "Give me the content to summarize.")
+      ("user" . ,content)
+      ("assistant" . "What is the URL? I'll only use it for additional context.")
+      ("user" . ,url))))
+
 (defun yap--retrieve-awesome-chatgpt-prompts (&optional force-update)
   "Retrieve and cache prompts from awesome-chatgpt-prompts.
 The data is cached for a day, unless FORCE-UPDATE is non-nil.
@@ -113,9 +128,10 @@ PROMPT is follow up user prompt."
     (optimize-code . yap-templates--optimize-code)
     (emojify . yap-templates--emojify)
     (who-what . yap-templates--who-what)
+    (summarize-webpage . yap-templates--summarize-webpage)
 
     ;; Gets prompt if {{prompt}} in the template
-    (joke . "Tell me a joke")
+    (joke . "Tell me a brand new joke") ;; works better than "tell me a joke"
     (difference-between . "What is the difference between {{First}} and {{Second}}?"))
   "A list of yap templates.")
 
