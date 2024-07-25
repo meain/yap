@@ -122,6 +122,7 @@ This is a temporary solution until we have a proper API to get models."
       nil)))
 
 ;; Use `(setq url-debug 1)' to debug things
+;; Use `(setq url-debug nil)' to disable debugging
 (defun yap--get-llm-response:openai (messages)
   "Get the response from OpenAI LLM for the given set of MESSAGES."
   (let* ((url-request-method "POST")
@@ -160,7 +161,7 @@ This is a temporary solution until we have a proper API to get models."
            `(("model" . ,yap-model)
              ("system" . ,(yap--system-message messages))
              ("messages" . ,(yap--convert-alist-sans-system messages)))))
-         (url-request-data (encode-coding-string json-data 'us-ascii)
+         (url-request-data (encode-coding-string json-data 'us-ascii))
          (url-request-data-type 'json)
          (resp (with-current-buffer (url-retrieve-synchronously
                                      "https://api.anthropic.com/v1/messages")
