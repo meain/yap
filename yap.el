@@ -64,12 +64,14 @@ If non-nil, it will use the echo area.")
                  (goto-char (point-min))
                  (re-search-forward "^$")
                  (json-read))))
-    (if (alist-get 'data resp)
+    (if (and resp (alist-get 'data resp))
         (mapcar (lambda (x) (alist-get 'id x))
                 (alist-get 'data resp))
-      (progn
-        (message "[ERROR] Unable to get models: %s" (yap--get-error-message resp))
-        nil))))
+      (message "[ERROR] Unable to get models: %s"
+               (if (not resp)
+                   "Response is empty"
+                 (yap--get-error-message resp)))
+      nil)))
 
 (defun yap--get-models:anthropic ()
   "Return a predefined list of models for Anthropic.
