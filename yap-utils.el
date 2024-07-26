@@ -117,24 +117,26 @@ a separate buffer. ORIGINAL-BUFFER is the buffer we initiated the request."
   (interactive)
   (display-buffer yap--response-buffer))
 
-(defun yap--show-diff (before after)
+(defun yap--show-diff-and-confirm (before after)
   "Show the diff between BEFORE and AFTER."
-  ;; TODO: Use diff package
   (let ((diff (substring-no-properties
                (shell-command-to-string
                 (format "diff -u <(echo %s) <(echo %s)"
                         (shell-quote-argument before)
                         (shell-quote-argument after))))))
-    (format "%s" diff)))
+    (with-temp-buffer
+      (insert diff)
+      (diff-mode)
+      (display-buffer (current-buffer))
+      (yes-or-no-p "Do you want to apply the changes? "))))
 
 (defun yap--rewrite-buffer-or-selection (response buffer start end)
   "Replace the content in BUFFER from START to END with the provided RESPONSE."
   (with-current-buffer buffer
     (if response
-        (let* ((to-replace (buffer-substring-no-properties start end))
-               (diff (yap--show-diff to-replace response)))
+        (let* ((to-replace (buffer-substring-no-properties start end)))
           (if (or (not yap-show-diff-before-rewrite)
-                  (yes-or-no-p (format "%s\nDo you want to apply the following changes? " diff)))
+                  (yap--show-diff-and-confirm to-replace response))
               (progn
                 (delete-region start end)
                 (insert response "\n"))
