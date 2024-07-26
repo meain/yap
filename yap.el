@@ -104,7 +104,7 @@ This is a temporary solution until we have a proper API to get models."
               `(("role" . ,role) ("content" . ,content))))
           messages))
 
-(defun yap--convert-alist-sans-system (messages)
+(defun yap--convert-messages-sans-system (messages)
   "Convert MESSAGES from (role . content) to OpenAI format, without system message."
   (mapcar (lambda (pair)
             (let ((role (car pair))
@@ -133,7 +133,7 @@ This is a temporary solution until we have a proper API to get models."
             ("Authorization" . ,(format "Bearer %s" yap-api-key:openai))))
          (json-data (json-encode
                      `(("model" . ,yap-model)
-                       ("messages" . ,(yap--convert-alist messages)))))
+                       ("messages" . ,(yap--convert-messages messages)))))
          ;; https://github.com/pythonic-emacs/anaconda-mode/issues/189
          (url-request-data (encode-coding-string json-data 'us-ascii)) ;; TODO: shouldn't this be utf-8
          (url-request-data-type 'json)
@@ -162,7 +162,7 @@ This is a temporary solution until we have a proper API to get models."
           (json-encode
            `(("model" . ,yap-model)
              ("system" . ,(yap--system-message messages))
-             ("messages" . ,(yap--convert-alist-sans-system messages)))))
+             ("messages" . ,(yap--convert-messages-sans-system messages)))))
          (url-request-data (encode-coding-string json-data 'us-ascii))
          (url-request-data-type 'json)
          (resp (with-current-buffer (url-retrieve-synchronously
