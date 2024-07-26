@@ -127,7 +127,8 @@ This is a temporary solution until we have a proper API to get models."
 ;; Use `(setq url-debug nil)' to disable debugging
 (defun yap--get-llm-response:openai (messages)
   "Get the response from OpenAI LLM for the given set of MESSAGES."
-  (let* ((url-request-method "POST")
+  (let* ((inhibit-message t)
+         (url-request-method "POST")
          (url-request-extra-headers
           `(("Content-Type" . "application/json")
             ("Authorization" . ,(format "Bearer %s" yap-api-key:openai))))
@@ -154,7 +155,8 @@ This is a temporary solution until we have a proper API to get models."
 ;; TODO: Not tested
 (defun yap--get-llm-response:anthropic (messages)
   "Get the response from Anthropic LLM for the given set of MESSAGES."
-  (let* ((url-request-method "POST")
+  (let* ((inhibit-message t)
+         (url-request-method "POST")
          (url-request-extra-headers
           `(("Content-Type" . "application/json")
             ("Authorization" . ,(format "x-api-key: %s" yap-api-key:anthropic))))
