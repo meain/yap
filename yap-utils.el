@@ -99,17 +99,17 @@ a separate buffer. ORIGINAL-BUFFER is the buffer we initiated the request."
         (display-buffer buffer)
       (if (and (featurep 'posframe) (fboundp 'posframe-show) (not yap-no-popup))
           (with-current-buffer original-buffer
-              (posframe-show " *yap-response*"
-                         :string response
-                         :timeout yap-popup-timeout
-                         :border-width 2
-                         :min-width 36
-                         :max-width fill-column
-                         :min-height 1
-                         :left-fringe 8
-                         :right-fringe 8
-                         :border-color (face-attribute 'vertical-border :foreground)
-                         :position (point)))
+            (posframe-show " *yap-response*"
+                           :string response
+                           :timeout yap-popup-timeout
+                           :border-width 2
+                           :min-width 36
+                           :max-width fill-column
+                           :min-height 1
+                           :left-fringe 8
+                           :right-fringe 8
+                           :border-color (face-attribute 'vertical-border :foreground)
+                           :position (point)))
         (message response)))))
 
 (defun yap-display-output-buffer ()
@@ -127,23 +127,17 @@ a separate buffer. ORIGINAL-BUFFER is the buffer we initiated the request."
                         (shell-quote-argument after))))))
     (format "%s" diff)))
 
-(defun yap--rewrite-buffer-or-selection (response buffer)
-  "Replace the buffer or selection with the given RESPONSE in BUFFER."
+(defun yap--rewrite-buffer-or-selection (response buffer start end)
+  "Replace the content in BUFFER from START to END with the provided RESPONSE."
   (with-current-buffer buffer
     (if response
-        (let* ((to-replace (if (region-active-p)
-                               (buffer-substring-no-properties (region-beginning) (region-end))
-                             (buffer-string)))
+        (let* ((to-replace (buffer-substring-no-properties start end))
                (diff (yap--show-diff to-replace response)))
           (if (or (not yap-show-diff-before-rewrite)
                   (yes-or-no-p (format "%s\nDo you want to apply the following changes? " diff)))
-              (if (region-active-p)
-                  (progn
-                    (delete-region (region-beginning) (region-end))
-                    (insert response "\n"))
-                (progn
-                  (delete-region (point-min) (point-max))
-                  (insert response)))
+              (progn
+                (delete-region start end)
+                (insert response "\n"))
             (message "No changes made.")))
       (message "[ERROR] Failed to get a response from LLM"))))
 

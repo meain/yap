@@ -195,10 +195,12 @@ Rewrite the buffer or selection if present with the returned response."
                      (or template 'default-rewrite))) ; Otherwise, use default template if not provided
          (llm-messages (yap--get-filled-template template)))
     (if llm-messages
-        (let ((buffer (current-buffer)))
+        (let ((buffer (current-buffer))
+              (start (if (region-active-p) (region-beginning) (point-min)))
+              (end (if (region-active-p) (region-end) (point-max))))
           (yap--get-llm-response llm-messages
                                  (lambda (message)
-                                   (yap--rewrite-buffer-or-selection message buffer))))
+                                   (yap--rewrite-buffer-or-selection message buffer start end))))
       (message "[ERROR] Failed to fill template"))))
 
 (defun yap-write (&optional template)
