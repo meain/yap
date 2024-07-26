@@ -4,6 +4,18 @@
 ;; Bunch of util functions for yap
 
 ;;; Code:
+(defvar yap-respond-in-buffer nil
+  "Whether to respond in a new buffer or the echo area.")
+(defvar yap-respond-in-buffer-threshold 300
+  "If the response is longer than this, always respond in a new buffer.")
+(defvar yap-show-diff-before-rewrite t
+  "Whether to show the diff before rewriting the buffer.")
+(defvar yap-popup-timeout 5
+  "The time in seconds to show the popup for.")
+(defvar yap-no-popup nil
+  "Whether to show the response in a popup or not.
+If non-nil, it will use the echo area.")
+
 (defvar yap--response-buffer "*yap-response*")
 
 (defun yap--parse-csv-line (line)
@@ -73,10 +85,10 @@
         (cdr system-message)
       nil)))
 
-(defun yap--present-response (response)
+(defun yap--present-response (response original-buffer)
   "Present the RESPONSE in a posframe or a new buffer, defaulting to the echo area.
 You can always call `yap-display-output-buffer' to view the output in
-a separate buffer."
+a separate buffer. ORIGINAL-BUFFER is the buffer we initiated the request."
   (let ((buffer (get-buffer-create yap--response-buffer)))
     (with-current-buffer buffer
       (erase-buffer)
@@ -86,7 +98,8 @@ a separate buffer."
     (if (or yap-respond-in-buffer (> (length response) yap-respond-in-buffer-threshold))
         (display-buffer buffer)
       (if (and (featurep 'posframe) (fboundp 'posframe-show) (not yap-no-popup))
-          (posframe-show " *yap-response*"
+          (with-current-buffer original-buffer
+              (posframe-show " *yap-response*"
                          :string response
                          :timeout yap-popup-timeout
                          :border-width 2
@@ -96,7 +109,7 @@ a separate buffer."
                          :left-fringe 8
                          :right-fringe 8
                          :border-color (face-attribute 'vertical-border :foreground)
-                         :position (point))
+                         :position (point)))
         (message response)))))
 
 (defun yap-display-output-buffer ()
