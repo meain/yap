@@ -23,7 +23,7 @@ https://github.com/user-attachments/assets/b947e1e5-8d34-4dbc-aacd-20a06beb74c7
 
 - **Prompt Templates**: Easily call predefined templates for common tasks.
 - **Buffer Modifications**: Modify your buffer with responses from LLMs.
-- **Service Support**: Currently supports OpenAI and Anthropic models.
+- **Service Support**: Currently supports only OpenAI
 - **Custom Templates**: Create and use your own templates.
 
 ## Installation
@@ -36,7 +36,6 @@ To install `yap`, add the following to your Emacs configuration:
   :config
   ;; Setup API keys
   (setq yap-api-key:openai "your-openai-api-key")
-  (setq yap-api-key:anthropic "your-anthropic-api-key")
 
   ;; Few customizations (optional)
   (setq yap-respond-in-buffer nil) ; respond in minibuffer vs separate buffer

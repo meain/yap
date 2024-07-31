@@ -29,8 +29,6 @@
   "The model to use for the yap command.")
 (defvar yap-api-key:openai nil
   "The API key to use with OpenAI models in the yap command.")
-(defvar yap-api-key:anthropic nil
-  "The API key to use with Anthropic models in the yap command.")
 (defvar yap-log-requests nil
   "Provide a folder to log all the requests and responses.")
 
@@ -55,26 +53,17 @@
                  (yap--get-error-message resp)))
       nil)))
 
-(defun yap--get-models:anthropic ()
-  "Return a predefined list of models for Anthropic.
-This is a temporary solution until we have a proper API to get models."
-  (list "claude-3-5-sonnet-20240620"
-        "claude-3-opus-20240229"
-        "claude-3-sonnet-20240229"
-        "claude-3-haiku-20240307"))
-
 (defun yap-set-service ()
   "Set the service to use for the yap command."
   (interactive)
-  (setq yap-service (completing-read "Service: " '("openai" "anthropic")))
+  (setq yap-service (completing-read "Service: " '("openai")))
   (yap-set-model))
 
 (defun yap-set-model ()
   "Fetch models and update the variable."
   (interactive)
   (if-let* ((models (pcase yap-service
-                      ("openai" (yap--get-models:openai))
-                      ("anthropic" (yap--get-models:anthropic))))
+                      ("openai" (yap--get-models:openai))))
             (model-name (completing-read "Model: " models)))
       (setq yap-model model-name)))
 
@@ -134,39 +123,11 @@ Once the response is fetched call the CALLBACK."
                   content)
               nil))))))))
 
-;; TODO: Not tested
-(defun yap--get-llm-response:anthropic (messages callback)
-  "Get the response from Anthropic LLM for the given set of MESSAGES.
-Once the response is fetched call the CALLBACK."
-  (let* ((inhibit-message t)
-         (url-request-method "POST")
-         (url-request-extra-headers
-          `(("Content-Type" . "application/json")
-            ("Authorization" . ,(format "x-api-key: %s" yap-api-key:anthropic))))
-         (json-data
-          (json-encode
-           `(("model" . ,yap-model)
-             ("system" . ,(yap--system-message messages))
-             ("messages" . ,(yap--convert-messages-sans-system messages)))))
-         (url-request-data (encode-coding-string json-data 'us-ascii))
-         (url-request-data-type 'json))
-    (url-retrieve "https://api.anthropic.com/v1/messages"
-                  (yap--process-response
-                   messages callback
-                   (lambda (buffer)
-                     (with-current-buffer buffer
-                       (let* ((resp (json-read))
-                              (content (alist-get 'content resp)))
-                         (if content
-                             (alist-get 'text (aref content 0))
-                           nil))))))))
-
 (defun yap--get-llm-response (messages callback)
   "Get the response from LLM for the given set of MESSAGES and call the CALLBACK."
   (message "Processing request via %s and %s model..." yap-service yap-model)
   (pcase yap-service
     ("openai" (yap--get-llm-response:openai messages callback))
-    ("anthropic" (yap--get-llm-response:anthropic messages callback))
     (_ (message "[ERROR] Unsupported service: %s" yap-service) nil)))
 
 (defun yap-prompt (&optional template)
