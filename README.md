@@ -15,7 +15,7 @@ or even buffer rewrites.
 
 https://github.com/user-attachments/assets/b947e1e5-8d34-4dbc-aacd-20a06beb74c7
 
-*If you like this, you might also like [meain/yeeha](https://github.com/meain/yeeha).*
+*If you like this, you might also like [meain/yaq](https://github.com/meain/yaq).*
 
 ---
 
