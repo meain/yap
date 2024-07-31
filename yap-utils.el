@@ -18,6 +18,27 @@ If non-nil, it will use the echo area.")
 
 (defvar yap--response-buffer "*yap-response*")
 
+(defun yap--clean-response-buffer ()
+  "Clean the response buffer."
+  (with-current-buffer yap--response-buffer
+    (erase-buffer)))
+
+(defun yap--insert-chunk-to-response-buffer (chunk)
+  "Insert CHUNK to the response buffer."
+  (with-current-buffer yap--response-buffer
+    (goto-char (point-max))
+    (insert chunk)))
+
+(defun yap-show-response-buffer ()
+  "Show the yap response buffer."
+  (interactive)
+  (if (fboundp 'markdown-mode) (markdown-mode))
+  (display-buffer (get-buffer-create yap--response-buffer)))
+
+(defun yap--hide-response-buffer ()
+  "Hide the yap response buffer."
+  (delete-windows-on yap--response-buffer))
+
 (defun yap--parse-csv-line (line)
   "Parse a CSV LINE into a list of fields, handling quotes properly."
   (let ((result '())
