@@ -67,6 +67,20 @@
             (model-name (completing-read "Model: " models)))
       (setq yap-model model-name)))
 
+(defun yap-use-fast-model ()
+  "Use the fast model for the yap command."
+  (interactive)
+  (if-let* ((model (pcase yap-service
+                     ("openai" "gpt-4o-mini"))))
+      (setq yap-model model)))
+
+(defun yap-use-best-model ()
+  "Use the best model for the yap command."
+  (interactive)
+  (if-let* ((model (pcase yap-service
+                     ("openai" "gpt-4o"))))
+      (setq yap-model model)))
+
 (defun yap--process-response (messages callback parse-response)
   "Process the response from LLM for the given set of MESSAGES and call CALLBACK.
 Use PARSE-RESPONSE to parse the response."
