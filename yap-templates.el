@@ -110,6 +110,10 @@ PROMPT is follow up user prompt."
          (prompt (read-string "Prompt: "))) ; prompt is asked here as we need to know the system prompt
     (yap-template-selection-context selected-prompt prompt (current-buffer))))
 
+(defun yap-templates--roast-code ()
+  "Roast the selected code."
+  (yap-template-prompt "Roast this. Be creative, short and harsh."))
+
 ;; TODO(meain): different set of templates for yap-prompt, yap-rewrite
 ;; and yap-do so that user won't have the whole set to pick from
 (defvar yap-templates
@@ -130,7 +134,9 @@ PROMPT is follow up user prompt."
     (who-what . yap-templates--who-what)
     (summarize-webpage . yap-templates--summarize-webpage)
 
-    ;; Gets prompt if {{prompt}} in the template
+    ;; Random/Extras
+    ; Gets prompt if {{prompt}} in the template
+    (roast . yap-templates--roast-code)
     (joke . "Tell me a brand new joke") ;; works better than "tell me a joke"
     (difference-between . "What is the difference between {{First}} and {{Second}}?"))
   "A list of yap templates.")
