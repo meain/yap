@@ -34,7 +34,16 @@
 
 (defun yap-templates--explain-code ()
   "Explain selected code."
-  (yap-template-prompt "Explain the code step by step"))
+  (yap-template-prompt "Give a high level overview of the code and explain any tricky parts. Keep it short."))
+
+(defun yap-templates--explain-code-with-comments ()
+  "Explain selected code."
+  (yap-template-prompt (concat "Explain the code provided. Use comments to explain the code. "
+                               "Do not change the code. Just add comments to explain it. "
+                               "Use markdown when necessary. Retain the relative order in which data is presented in the code. "
+                               "No need to have headers like Code explanation or point by point breakdown. "
+                               "Use emojies to make it more engaging. "
+                               "Do not provide the code again. Just explain it.")))
 
 (defun yap-templates--optimize-code ()
   "Optimize selected code."
@@ -129,6 +138,7 @@ PROMPT is follow up user prompt."
     ;; Biuiltins
     (summarize . yap-temlpates--summarize)
     (explain-code . yap-templates--explain-code)
+    (explain-code-with-comments . yap-templates--explain-code-with-comments)
     (optimize-code . yap-templates--optimize-code)
     (emojify . yap-templates--emojify)
     (who-what . yap-templates--who-what)
