@@ -132,7 +132,6 @@ FINAL-CALLBACK is called with the final response."
                        ("stream" . t)
                        ("messages" . ,(yap--convert-messages messages))))))
     (let ((prev-pending "")
-          (full-message "")
           (initial-message t)
           (inhibit-message t))
       (plz 'post
@@ -180,12 +179,13 @@ FINAL-CALLBACK is called with the final response."
 
                       ;; Data is in choices.0.delta.content
                       (mapc (lambda (x)
-                              (let ((message
-                                     (alist-get 'content
-                                                (alist-get 'delta
-                                                           (aref (alist-get 'choices x) 0)))))
-                                (when (and partial-callback message)
-                                  (funcall partial-callback message))))
+                              (when-let* ((message
+                                           (alist-get 'content
+                                                      (alist-get 'delta
+                                                                 (aref (alist-get 'choices x) 0))))
+                                          (utf8-message (decode-coding-string (string-make-unibyte message) 'utf-8)))
+                                (when partial-callback
+                                  (funcall partial-callback utf8-message))))
                             json-objects))))))))
 
 (defun yap--get-llm-response (messages partial-callback &optional final-callback)
