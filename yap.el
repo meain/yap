@@ -189,9 +189,8 @@ FINAL-CALLBACK is called with the final response."
                             json-objects))))))))
 
 (defun yap--get-llm-response (messages partial-callback &optional final-callback)
-  "Get the response from LLM for the given set of MESSAGES.
-PARTIAL-CALLBACK is called with each chunk of the response.
-FINAL-CALLBACK is called with the final response."
+  "Get LLM response for MESSAGES.
+Call PARTIAL-CALLBACK with each chunk, FINAL-CALLBACK with final response."
   (message "Processing request via %s and %s model..." yap-service yap-model)
   (pcase yap-service
     ("openai" (yap--get-llm-response:openai messages partial-callback final-callback))
