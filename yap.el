@@ -24,14 +24,29 @@
 (require 'yap-templates)
 (require 'yap-utils)
 
-(defvar yap-service "openai"
-  "The service to use for the yap command.")
-(defvar yap-model "gpt-4o-mini"
-  "The model to use for the yap command.")
-(defvar yap-api-key:openai nil
-  "The API key to use with OpenAI models in the yap command.")
-(defvar yap-log-requests nil
-  "Provide a folder to log all the requests and responses.")
+(defgroup yap nil
+  "Customization options for the yap command."
+  :group 'tools)
+
+(defcustom yap-service "openai"
+  "The service to use for the yap command."
+  :type 'string
+  :group 'yap)
+
+(defcustom yap-model "gpt-4o-mini"
+  "The model to use for the yap command."
+  :type 'string
+  :group 'yap)
+
+(defcustom yap-api-key-openai nil
+  "The API key to use with OpenAI models in the yap command."
+  :type 'string
+  :group 'yap)
+
+(defcustom yap-log-requests nil
+  "Provide a folder to log all the requests and responses."
+  :type 'string
+  :group 'yap)
 
 (defun yap--get-models:openai ()
   "Get a list of OpenAI models available."
