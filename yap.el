@@ -23,6 +23,8 @@
 
 (require 'yap-templates)
 (require 'yap-utils)
+(require 'yap-openai)
+(require 'yap-ollama)
 
 (defgroup yap nil
   "Customization options for the yap command."
@@ -48,54 +50,23 @@
   :type 'string
   :group 'yap)
 
-(defun yap--get-models:openai ()
-  "Get a list of OpenAI models available."
-  (let* ((url-request-method "GET")
-         (url-request-extra-headers
-          `(("Content-Type" . "application/json")
-            ("Authorization" . ,(format "Bearer %s" yap-api-key:openai))))
-         (url-request-data-type 'json)
-         (resp (with-current-buffer (url-retrieve-synchronously
-                                     "https://api.openai.com/v1/models")
-                 (goto-char (point-min))
-                 (re-search-forward "^$")
-                 (json-read))))
-    (if (and resp (alist-get 'data resp))
-        (mapcar (lambda (x) (alist-get 'id x))
-                (alist-get 'data resp))
-      (message "[ERROR] Unable to get models: %s"
-               (if (not resp)
-                   "Response is empty"
-                 (yap--get-error-message resp)))
-      nil)))
-
 (defun yap-set-service ()
   "Set the service to use for the yap command."
   (interactive)
-  (setq yap-service (completing-read "Service: " '("openai")))
+  (setq yap-service
+        (completing-read
+         "Service: "
+         '("openai" "ollama")))
   (yap-set-model))
 
 (defun yap-set-model ()
   "Fetch models and update the variable."
   (interactive)
   (if-let* ((models (pcase yap-service
-                      ("openai" (yap--get-models:openai))))
+                      ("openai" (yap--get-models:openai))
+                      ("ollama" (yap--get-models:ollama))))
             (model-name (completing-read "Model: " models)))
       (setq yap-model model-name)))
-
-(defun yap-use-fast-model ()
-  "Use the fast model for the yap command."
-  (interactive)
-  (if-let* ((model (pcase yap-service
-                     ("openai" "gpt-4o-mini"))))
-      (setq yap-model model)))
-
-(defun yap-use-best-model ()
-  "Use the best model for the yap command."
-  (interactive)
-  (if-let* ((model (pcase yap-service
-                     ("openai" "gpt-4o"))))
-      (setq yap-model model)))
 
 (defun yap--process-response (messages resp callback)
   "Process the final complete response from LLM.
@@ -117,83 +88,13 @@ CALLBACK is the function to call with the final response."
         (if callback (funcall callback resp)))
     (message "[ERROR] Unable to get response %s" (yap--get-error-message resp))))
 
-;; Use `(setq url-debug 1)' to debug things
-;; Use `(setq url-debug nil)' to disable debugging
-(defun yap--get-llm-response:openai (messages partial-callback &optional final-callback)
-  "Get the response from OpenAI LLM for the given set of MESSAGES.
-PARTIAL-CALLBACK is called with each chunk of the response.
-FINAL-CALLBACK is called with the final response."
-  (let* ((inhibit-message t)
-         (headers
-          `(("Content-Type" . "application/json")
-            ("Authorization" . ,(format "Bearer %s" yap-api-key:openai))))
-         (json-data (json-encode
-                     `(("model" . ,yap-model)
-                       ("stream" . t)
-                       ("messages" . ,(yap--convert-messages messages))))))
-    (let ((prev-pending "")
-          (initial-message t)
-          (inhibit-message t))
-      (plz 'post
-        "https://api.openai.com/v1/chat/completions"
-        :headers headers
-        :body json-data
-        :as 'string
-        :then (lambda (_)
-                (when final-callback
-                  (funcall final-callback
-                           (with-current-buffer yap--response-buffer (buffer-string)))))
-        :filter (lambda (process output)
-                  ;; Let plz do its thing
-                  ;; This code is from `test-plz-process-filter'
-                  (when (buffer-live-p (process-buffer process))
-                    (with-current-buffer (process-buffer process)
-                      (let ((movingp (= (point) (process-mark process))))
-                        (save-excursion
-                          (goto-char (process-mark process))
-                          (insert output)
-                          (set-marker (process-mark process) (point)))
-                        (when movingp
-                          (goto-char (process-mark process))))))
-
-                  (let* ((filtered-output
-                          (if initial-message
-                              (progn
-                                (setq initial-message nil)
-                                (substring output (string-match "\r\n\r\n" output))) ; trim out headers
-                            (concat prev-pending output)))
-                         (lines (split-string filtered-output "\n" t))
-                         ;; trim out empty lines including ones with just \r
-                         (non-empty-lines (seq-filter (lambda (x) (length> x 2)) lines))
-                         ;; trim out `data: ` prefix from each line
-                         (trimmed-lines (mapcar (lambda (x) (substring x 6)) non-empty-lines))
-                         ;; filter out lines that are not json as line can but cut off half way through
-                         (json-lines (seq-filter (lambda (x) (ignore-errors (json-read-from-string x))) trimmed-lines))
-                         ;; convert to json-objects
-                         (json-objects (mapcar 'json-read-from-string json-lines)))
-                    (with-current-buffer yap--response-buffer
-                      ;; Save last line to prev-pending in case it is cut off
-                      (if (< (length json-lines) (length trimmed-lines))
-                          (setq prev-pending (car (last lines)))
-                        (setq prev-pending ""))
-
-                      ;; Data is in choices.0.delta.content
-                      (mapc (lambda (x)
-                              (when-let* ((message
-                                           (alist-get 'content
-                                                      (alist-get 'delta
-                                                                 (aref (alist-get 'choices x) 0))))
-                                          (utf8-message (decode-coding-string (string-make-unibyte message) 'utf-8)))
-                                (when partial-callback
-                                  (funcall partial-callback utf8-message))))
-                            json-objects))))))))
-
 (defun yap--get-llm-response (messages partial-callback &optional final-callback)
   "Get LLM response for MESSAGES.
 Call PARTIAL-CALLBACK with each chunk, FINAL-CALLBACK with final response."
   (message "Processing request via %s and %s model..." yap-service yap-model)
   (pcase yap-service
     ("openai" (yap--get-llm-response:openai messages partial-callback final-callback))
+    ("ollama" (yap--get-llm-response:ollama messages partial-callback final-callback))
     (_ (message "[ERROR] Unsupported service: %s" yap-service) nil)))
 
 (defun yap-prompt (&optional template)
