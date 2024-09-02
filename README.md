@@ -48,9 +48,9 @@ To install `yap`, add the following to your Emacs configuration:
 
   ;; Setup keybindings (optional)
   ;; These are what I have, not recommended to use as is
-  (global-set-key (kbd "M-f y y") 'yap-prompt)
-  (global-set-key (kbd "M-f y r") 'yap-rewrite)
-  (global-set-key (kbd "M-f y d") 'yap-do))
+  (global-set-key (kbd "<your-fav-keybinding>") 'yap-prompt)
+  (global-set-key (kbd "<your-fav-keybinding>") 'yap-rewrite)
+  (global-set-key (kbd "<your-fav-keybinding>") 'yap-do))
 ```
 
 ## Basic Usage

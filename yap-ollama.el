@@ -15,7 +15,6 @@
 (defun yap--get-models:ollama ()
   "Get the models for Ollama."
   (let ((yap-llm-base-url:openai yap-llm-base-url:ollama))
-    (message "Base url: %s" yap-llm-base-url:openai)
     (yap--get-models:openai)))
 
 (defun yap--get-llm-response:ollama (messages partial-callback &optional final-callback)

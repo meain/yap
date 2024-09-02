@@ -6,7 +6,6 @@
 ;;; Code:
 (defvar yap--response-buffer "*yap-response*")
 
-
 (defun yap--clean-response-buffer ()
   "Clean the response buffer."
   (with-current-buffer (get-buffer-create yap--response-buffer)
