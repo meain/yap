@@ -35,7 +35,7 @@
   :type 'string
   :group 'yap)
 
-(defcustom yap-model "gpt-4o-mini"
+(defcustom yap-model "gpt-4o"
   "The model to use for the yap command."
   :type 'string
   :group 'yap)

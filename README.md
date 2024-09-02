@@ -37,14 +37,9 @@ To install `yap`, add the following to your Emacs configuration:
   ;; Setup API keys
   (setq yap-api-key:openai "your-openai-api-key")
 
-  ;; Few customizations (optional)
-  (setq yap-respond-in-buffer nil) ; respond in minibuffer vs separate buffer
-  (setq yap-respond-in-buffer-threshold 300) ; override yap-respond-in-buffer if response is longer than this
-  (setq yap-show-diff-before-rewrite t)
-
-  ;; Optionally you can also specify the service and model here
+  ;; Optionally you can specify the service and model
   (yap-set-service "openai") ; default: openai
-  (yap-set-model "gpt-4o") ; default: gpt-3.5-turbo
+  (yap-set-model "gpt-4o") ; default: gpt-4o
 
   ;; Setup keybindings (optional)
   ;; These are what I have, not recommended to use as is
@@ -66,6 +61,8 @@ the available templates interactively:
 
 Besides this, you have two function `yap-set-service` and
 `yap-set-model` to set the service and model you want to use.
+
+*See [tips-and-tricks](./tips-and-tricks.md) for some useful tips.*
 
 ## Real-World Examples
 
