@@ -25,6 +25,7 @@
 (require 'yap-utils)
 (require 'yap-openai)
 (require 'yap-ollama)
+(require 'yap-anthropic)
 
 (defgroup yap nil
   "Customization options for the yap command."
@@ -56,7 +57,7 @@
   (setq yap-service
         (completing-read
          "Service: "
-         '("openai" "ollama")))
+         '("openai" "ollama" "anthropic")))
   (yap-set-model))
 
 (defun yap-set-model ()
@@ -64,7 +65,8 @@
   (interactive)
   (if-let* ((models (pcase yap-service
                       ("openai" (yap--get-models:openai))
-                      ("ollama" (yap--get-models:ollama))))
+                      ("ollama" (yap--get-models:ollama))
+                      ("anthropic" (yap--get-models:anthropic))))
             (model-name (completing-read "Model: " models)))
       (setq yap-model model-name)))
 
@@ -95,6 +97,7 @@ Call PARTIAL-CALLBACK with each chunk, FINAL-CALLBACK with final response."
   (pcase yap-service
     ("openai" (yap--get-llm-response:openai messages partial-callback final-callback))
     ("ollama" (yap--get-llm-response:ollama messages partial-callback final-callback))
+    ("anthropic" (yap--get-llm-response:anthropic messages partial-callback final-callback))
     (_ (message "[ERROR] Unsupported service: %s" yap-service) nil)))
 
 (defun yap-prompt (&optional template)

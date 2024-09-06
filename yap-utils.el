@@ -78,13 +78,13 @@
 
 (defun yap--convert-messages-sans-system (messages)
   "Convert MESSAGES from (role . content) to OpenAI format, without system message."
-  (mapcar (lambda (pair)
-            (let ((role (car pair))
-                  (content (cdr pair)))
-              (if (not (string= role "system"))
-                  `(("role" . ,role) ("content" . ,content))
-                nil)))
-          messages))
+  (seq-filter #'identity
+              (mapcar (lambda (pair)
+                        (let ((role (car pair))
+                              (content (cdr pair)))
+                          (unless (string= role "system")
+                            `(("role" . ,role) ("content" . ,content)))))
+                      messages)))
 
 (defun yap--system-message (messages)
   "Check if the given MESSAGES contain a system message."

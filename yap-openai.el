@@ -39,8 +39,7 @@
   "Get the response from OpenAI LLM for the given set of MESSAGES.
 PARTIAL-CALLBACK is called with each chunk of the response.
 FINAL-CALLBACK is called with the final response."
-  (let* ((inhibit-message t)
-         (headers
+  (let* ((headers
           `(("Content-Type" . "application/json")
             ("Authorization" . ,(format "Bearer %s" yap-api-key:openai))))
          (json-data (json-encode
