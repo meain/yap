@@ -114,10 +114,13 @@ The response from LLM is displayed in the *yap-response* buffer."
         ;; TODO yap--get-llm-response is not a good name anymore
         (let ((buffer (current-buffer)))
           (yap--clean-response-buffer)
-          (yap-show-response-buffer)
-          (yap--get-llm-response llm-messages
-                                 (lambda (chunk)
-                                   (yap--insert-chunk-to-response-buffer chunk))))
+          (let ((first-chunk t))
+            (yap--get-llm-response llm-messages
+                                   (lambda (chunk)
+                                     (when first-chunk
+                                       (setq first-chunk nil)
+                                       (yap-show-response-buffer))
+                                     (yap--insert-chunk-to-response-buffer chunk)))))
       (message "[ERROR] Failed to fill template"))))
 
 (defun yap-rewrite (&optional template)
@@ -133,13 +136,16 @@ Rewrite the buffer or selection if present with the returned response."
               (start (if (region-active-p) (region-beginning) (point-min)))
               (end (if (region-active-p) (region-end) (point-max))))
           (yap--clean-response-buffer)
-          (yap-show-response-buffer)
-          (yap--get-llm-response llm-messages
-                                 (lambda (chunk)
-                                   (yap--insert-chunk-to-response-buffer chunk))
-                                 (lambda (message)
-                                   (yap--hide-response-buffer)
-                                   (yap--rewrite-buffer-or-selection message buffer start end))))
+          (let ((first-chunk t))
+            (yap--get-llm-response llm-messages
+                                   (lambda (chunk)
+                                     (when first-chunk
+                                       (setq first-chunk nil)
+                                       (yap-show-response-buffer))
+                                     (yap--insert-chunk-to-response-buffer chunk))
+                                   (lambda (message)
+                                     (yap--hide-response-buffer)
+                                     (yap--rewrite-buffer-or-selection message buffer start end)))))
       (message "[ERROR] Failed to fill template"))))
 
 (defun yap-write (&optional template)
