@@ -51,6 +51,11 @@
   :type 'string
   :group 'yap)
 
+(defcustom yap-rewrite-auto-accept nil
+  "If non-nil, automatically accept the rewrite."
+  :type 'boolean
+  :group 'yap)
+
 (defun yap-set-service ()
   "Set the service to use for the yap command."
   (interactive)
@@ -100,6 +105,11 @@ Call PARTIAL-CALLBACK with each chunk, FINAL-CALLBACK with final response."
     ("anthropic" (yap--get-llm-response:anthropic messages partial-callback final-callback))
     (_ (message "[ERROR] Unsupported service: %s" yap-service) nil)))
 
+(defun yap-close ()
+  "Close the response buffer."
+  (interactive)
+  (kill-buffer yap--response-buffer))
+
 (defun yap-prompt (&optional template)
   "Prompt the user with the given PROMPT using TEMPLATE if provided.
 If TEMPLATE is not provided or nil, use the default template.
@@ -123,6 +133,46 @@ The response from LLM is displayed in the *yap-response* buffer."
                                      (yap--insert-chunk-to-response-buffer chunk)))))
       (message "[ERROR] Failed to fill template"))))
 
+(defun yap-rewrite-cancel ()
+  "Cancel the rewrite and kill the buffer."
+  (with-current-buffer yap--response-buffer
+    (kill-buffer)
+    (message "Cancelled rewrite")))
+
+(defun yap-rewrite-show-diff (buffer start end message)
+  "Show the diff between the BUFFER and the rewritten MESSAGE.
+START and END are the region to replace in original buffer."
+  (let ((to-replace (with-current-buffer buffer
+                      (buffer-substring-no-properties start end)))
+        (temp-original (make-temp-file "yap-rewrite-original-"))
+        (temp-rewritten (make-temp-file "yap-rewrite-rewritten-")))
+    (with-temp-file temp-original
+      (insert to-replace))
+    (with-temp-file temp-rewritten
+      (insert message))
+    (with-current-buffer (get-buffer-create "*yap-rewrite-diff*")
+      (erase-buffer)
+      (insert (with-temp-buffer
+                (call-process "diff" nil t nil "-u" temp-original temp-rewritten)
+                (buffer-string)))
+      (diff-mode)
+      (pop-to-buffer (current-buffer))
+      (delete-file temp-original)
+      (delete-file temp-rewritten))))
+
+(defun yap-rewrite-accept (buffer start end message)
+  "Accept the rewrite and replace the region in the BUFFER with MESSAGE.
+START and END are the region to replace in original buffer."
+  (with-current-buffer buffer
+    (delete-region start end)
+    (goto-char start)
+    ;; newline is because of evil-mode not playing nice
+    (if (boundp 'evil-mode)
+        (insert message "\n")
+      (insert message)))
+  (with-current-buffer yap--response-buffer
+    (kill-buffer)))
+
 (defun yap-rewrite (&optional template)
   "Prompt the user with the given PROMPT using TEMPLATE if provided.
 Rewrite the buffer or selection if present with the returned response."
@@ -138,44 +188,32 @@ Rewrite the buffer or selection if present with the returned response."
               (end (if (region-active-p) (region-end) (point-max))))
           (yap--clean-response-buffer)
           (let ((first-chunk t))
-            (yap--get-llm-response llm-messages
-                                   (lambda (chunk)
-                                     (when first-chunk
-                                       (setq first-chunk nil)
-                                       (yap-show-response-buffer)
-                                       (funcall crrent-major-mode))
-                                     (yap--insert-chunk-to-response-buffer chunk))
-                                   (lambda (message)
-                                     (with-current-buffer yap--response-buffer
-                                       (setq header-line-format
-                                             (concat
-                                              "C-c C-c: Accept rewrite | "
-                                              "C-c C-d: View diff | "
-                                              "C-c C-k: Cancel"))
-                                       (local-set-key (kbd "C-c C-k")
-                                                      (lambda ()
-                                                        (interactive)
-                                                        (kill-buffer)))
-                                       (local-set-key (kbd "C-c C-c")
-                                                      (lambda ()
-                                                        (interactive)
-                                                        (with-current-buffer buffer
-                                                          (delete-region start end)
-                                                          (insert message "\n"))
-                                                        (kill-buffer)))
-                                       (local-set-key (kbd "C-c C-d")
-                                                      (lambda ()
-                                                        (interactive)
-                                                        (let ((to-replace (with-current-buffer buffer
-                                                                            (buffer-substring-no-properties start end))))
-                                                          (with-current-buffer (get-buffer-create "*yap-diff*")
-                                                            (erase-buffer)
-                                                            (insert
-                                                             (shell-command-to-string
-                                                              (format "diff -u <(echo '%s') <(echo '%s')" to-replace message)))
-                                                            (diff-mode)
-                                                            (pop-to-buffer (current-buffer)))))))
-                                     (pop-to-buffer yap--response-buffer)))))
+            (yap--get-llm-response
+             llm-messages
+             (lambda (chunk)
+               (when first-chunk
+                 (setq first-chunk nil)
+                 (yap-show-response-buffer)
+                 (funcall crrent-major-mode))
+               (yap--insert-chunk-to-response-buffer chunk))
+             (lambda (message)
+               (if yap-rewrite-auto-accept
+                   (yap-rewrite-accept buffer start end message)
+                 (progn
+                   (with-current-buffer yap--response-buffer
+                     (setq header-line-format
+                           (concat
+                            "C-c C-c: Accept rewrite | "
+                            "C-c C-d: View diff | "
+                            "C-c C-k: Cancel"))
+                     (local-set-key (kbd "C-c C-k")
+                                    (lambda () (interactive) (yap-rewrite-cancel)))
+                     (local-set-key (kbd "C-c C-c")
+                                    (lambda () (interactive)
+                                      (yap-rewrite-accept buffer start end message)))
+                     (local-set-key (kbd "C-c C-d")
+                                    (lambda () (interactive) (yap-rewrite-show-diff buffer start end message))))
+                   (pop-to-buffer yap--response-buffer)))))))
       (message "[ERROR] Failed to fill template"))))
 
 (defun yap-write (&optional template)

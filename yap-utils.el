@@ -102,35 +102,6 @@
   (interactive)
   (display-buffer yap--response-buffer))
 
-(defun yap--show-diff-and-confirm (before after)
-  "Show the diff between BEFORE and AFTER."
-  (if (not yap-show-diff-before-rewrite)
-      t
-    (let ((diff (substring-no-properties
-                 (shell-command-to-string
-                  (format "diff -u <(echo %s) <(echo %s)"
-                          (shell-quote-argument before)
-                          (shell-quote-argument after))))))
-      (with-temp-buffer
-        (insert diff)
-        (diff-mode)
-        (display-buffer (current-buffer))
-        (prog1
-            (yes-or-no-p "Do you want to apply the changes? ")
-          (kill-buffer))))))
-
-(defun yap--rewrite-buffer-or-selection (response buffer start end)
-  "Replace the content in BUFFER from START to END with the provided RESPONSE."
-  (with-current-buffer buffer
-    (if response
-        (let* ((to-replace (buffer-substring-no-properties start end)))
-          (if (yap--show-diff-and-confirm to-replace response)
-              (progn
-                (delete-region start end)
-                (insert response "\n"))
-            (message "No changes made.")))
-      (message "[ERROR] Failed to get a response from LLM"))))
-
 (defun yap--handle-error (url headers content err)
   "Write the URL, HEADERS, CONTENT and ERR into the *yap-errors* buffer."
   (let* ((error-buffer (get-buffer-create "*yap-errors*"))
