@@ -4,6 +4,8 @@
 ;; Bunch of util functions for yap
 
 ;;; Code:
+(require 'plz)
+
 (defvar yap--response-buffer "*yap-response*")
 
 (defun yap--clean-response-buffer ()
@@ -127,6 +129,19 @@
                 (insert response "\n"))
             (message "No changes made.")))
       (message "[ERROR] Failed to get a response from LLM"))))
+
+(defun yap--handle-error (url headers content err)
+  "Write the URL, HEADERS, CONTENT and ERR into the *yap-errors* buffer."
+  (let* ((error-buffer (get-buffer-create "*yap-errors*"))
+         (response (plz-error-response err))
+         (body (plz-response-body response)))
+    (with-current-buffer error-buffer
+      (erase-buffer)  ;; Clear previous errors
+      (insert (format "URL: %s\n\n" url))
+      (insert (format "Headers:\n%s\n\n" (json-encode headers)))
+      (insert (format "Content:\n%s\n\n" content))
+      (insert (format "Error:\n%s" body))))
+  (message "An error occurred. Please check the *yap-errors* buffer for details."))
 
 (provide 'yap-utils)
 ;;; yap-utils.el ends here

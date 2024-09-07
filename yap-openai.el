@@ -39,7 +39,8 @@
   "Get the response from OpenAI LLM for the given set of MESSAGES.
 PARTIAL-CALLBACK is called with each chunk of the response.
 FINAL-CALLBACK is called with the final response."
-  (let* ((headers
+  (let* ((url (concat yap-llm-base-url:openai "/chat/completions"))
+         (headers
           `(("Content-Type" . "application/json")
             ("Authorization" . ,(format "Bearer %s" yap-api-key:openai))))
          (json-data (json-encode
@@ -49,8 +50,7 @@ FINAL-CALLBACK is called with the final response."
     (let ((prev-pending "")
           (initial-message t)
           (inhibit-message t))
-      (plz 'post
-        (concat yap-llm-base-url:openai "/chat/completions")
+      (plz 'post url
         :headers headers
         :body json-data
         :as 'string
@@ -58,6 +58,7 @@ FINAL-CALLBACK is called with the final response."
                 (when final-callback
                   (funcall final-callback
                            (with-current-buffer yap--response-buffer (buffer-string)))))
+        :else (lambda (err) (yap--handle-error url headers json-data err))
         :filter (lambda (process output)
                   ;; Let plz do its thing
                   ;; This code is from `test-plz-process-filter'

@@ -6,6 +6,7 @@
 ;;; Code:
 (require 'url)
 (require 'plz)
+(require 'yap-utils)
 
 (defcustom yap-llm-base-url:anthropic "https://api.anthropic.com/v1"
   "Base URL for the Anthropic API."
@@ -32,7 +33,8 @@ manage it unfortunately."
   "Get the response from Anthropic LLM for the given set of MESSAGES.
 PARTIAL-CALLBACK is called with each chunk of the response.
 FINAL-CALLBACK is called with the final response."
-  (let* ((headers
+  (let* ((url (concat yap-llm-base-url:anthropic "/messages"))
+         (headers
           `(("Content-Type" . "application/json")
             ("x-api-key" . ,yap-api-key:anthropic)
             ("anthropic-version" . "2023-06-01")))
@@ -45,8 +47,7 @@ FINAL-CALLBACK is called with the final response."
     (let ((prev-pending "")
           (initial-message t)
           (inhibit-message t))
-      (plz 'post
-        (concat yap-llm-base-url:anthropic "/messages")
+      (plz 'post url
         :headers headers
         :body json-data
         :as 'string
@@ -54,6 +55,7 @@ FINAL-CALLBACK is called with the final response."
                 (when final-callback
                   (funcall final-callback
                            (with-current-buffer yap--response-buffer (buffer-string)))))
+        :else (lambda (err) (yap--handle-error url headers json-data err))
         :filter (lambda (process output)
                   ;; Let plz do its thing
                   (when (buffer-live-p (process-buffer process))
