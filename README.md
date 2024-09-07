@@ -36,16 +36,27 @@ To install `yap`, add the following to your Emacs configuration:
   :config
   ;; Setup API keys
   (setq yap-api-key:openai "your-openai-api-key")
+  (setq yap-api-key:anthropic "your-anthropic-api-key")
 
-  ;; Optionally you can specify the service and model
+  ;; Optionally you can specify a service and model
   (yap-set-service "openai") ; default: openai
   (yap-set-model "gpt-4o") ; default: gpt-4o
 
+  ;; Add window rules for *yap-response* buffer so that it shows up at
+  ;; top of the frame
+  (add-to-list 'display-buffer-alist
+               `(,(rx bos yap--response-buffer eos)
+                 (display-buffer-reuse-window
+                  display-buffer-in-side-window)
+                 (reusable-frames . visible)
+                 (side            . top)
+                 (window-height   . 0.3)))
+
   ;; Setup keybindings (optional)
-  ;; These are what I have, not recommended to use as is
   (global-set-key (kbd "<your-fav-keybinding>") 'yap-prompt)
   (global-set-key (kbd "<your-fav-keybinding>") 'yap-rewrite)
-  (global-set-key (kbd "<your-fav-keybinding>") 'yap-do))
+  (global-set-key (kbd "<your-fav-keybinding>") 'yap-write)
+  (global-set-key (kbd "<your-fav-keybinding>") (lambda () (interactive) (yap-prompt 'explain-code))))
 ```
 
 ## Basic Usage
