@@ -116,7 +116,10 @@ Call PARTIAL-CALLBACK with each chunk, FINAL-CALLBACK with final response."
   (interactive)
   (if (get-buffer-window yap--response-buffer)
       (delete-window (get-buffer-window yap--response-buffer))
-    (yap-show-response-buffer)))
+    (with-current-buffer yap--response-buffer
+      (if (length> (buffer-string) 0)
+          (yap-show-response-buffer)
+        (message "There is nothing in the yap response buffer")))))
 
 (defun yap-prompt (&optional template)
   "Prompt the user with the given PROMPT using TEMPLATE if provided.
