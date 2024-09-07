@@ -105,10 +105,18 @@ Call PARTIAL-CALLBACK with each chunk, FINAL-CALLBACK with final response."
     ("anthropic" (yap--get-llm-response:anthropic messages partial-callback final-callback))
     (_ (message "[ERROR] Unsupported service: %s" yap-service) nil)))
 
-(defun yap-close ()
+(defun yap-buffer-close ()
   "Close the response buffer."
   (interactive)
-  (kill-buffer yap--response-buffer))
+  (when (get-buffer-window yap--response-buffer)
+    (delete-window (get-buffer-window yap--response-buffer))))
+
+(defun yap-buffer-toggle ()
+  "Open or close the *yap-response* buffer."
+  (interactive)
+  (if (get-buffer-window yap--response-buffer)
+      (delete-window (get-buffer-window yap--response-buffer))
+    (yap-show-response-buffer)))
 
 (defun yap-prompt (&optional template)
   "Prompt the user with the given PROMPT using TEMPLATE if provided.
