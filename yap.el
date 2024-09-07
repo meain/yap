@@ -133,6 +133,7 @@ Rewrite the buffer or selection if present with the returned response."
          (llm-messages (yap--get-filled-template template)))
     (if llm-messages
         (let ((buffer (current-buffer))
+              (crrent-major-mode major-mode)
               (start (if (region-active-p) (region-beginning) (point-min)))
               (end (if (region-active-p) (region-end) (point-max))))
           (yap--clean-response-buffer)
@@ -141,11 +142,40 @@ Rewrite the buffer or selection if present with the returned response."
                                    (lambda (chunk)
                                      (when first-chunk
                                        (setq first-chunk nil)
-                                       (yap-show-response-buffer))
+                                       (yap-show-response-buffer)
+                                       (funcall crrent-major-mode))
                                      (yap--insert-chunk-to-response-buffer chunk))
                                    (lambda (message)
-                                     (yap--hide-response-buffer)
-                                     (yap--rewrite-buffer-or-selection message buffer start end)))))
+                                     (with-current-buffer yap--response-buffer
+                                       (setq header-line-format
+                                             (concat
+                                              "C-c C-c: Accept rewrite | "
+                                              "C-c C-d: View diff | "
+                                              "C-c C-k: Cancel"))
+                                       (local-set-key (kbd "C-c C-k")
+                                                      (lambda ()
+                                                        (interactive)
+                                                        (kill-buffer)))
+                                       (local-set-key (kbd "C-c C-c")
+                                                      (lambda ()
+                                                        (interactive)
+                                                        (with-current-buffer buffer
+                                                          (delete-region start end)
+                                                          (insert message "\n"))
+                                                        (kill-buffer)))
+                                       (local-set-key (kbd "C-c C-d")
+                                                      (lambda ()
+                                                        (interactive)
+                                                        (let ((to-replace (with-current-buffer buffer
+                                                                            (buffer-substring-no-properties start end))))
+                                                          (with-current-buffer (get-buffer-create "*yap-diff*")
+                                                            (erase-buffer)
+                                                            (insert
+                                                             (shell-command-to-string
+                                                              (format "diff -u <(echo '%s') <(echo '%s')" to-replace message)))
+                                                            (diff-mode)
+                                                            (pop-to-buffer (current-buffer)))))))
+                                     (pop-to-buffer yap--response-buffer)))))
       (message "[ERROR] Failed to fill template"))))
 
 (defun yap-write (&optional template)
