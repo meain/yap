@@ -10,7 +10,7 @@
                 display-buffer-in-side-window)
                (reusable-frames . visible)
                (side            . top)
-               (window-height   . 0.2)))
+               (window-height   . 0.3)))
 ```
 
 ## Setup a function to quickly switch to your favorite model
