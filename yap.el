@@ -206,9 +206,11 @@ Rewrite the buffer or selection if present with the returned response."
                  (yap-show-response-buffer)
                  (funcall crrent-major-mode))
                (yap--insert-chunk-to-response-buffer chunk))
-             (lambda (message)
+             (lambda (_message)
+               ;; Using buffer text instead of message, this will let the user edit
+               ;; the llm response and then use the edited version for rewrites.
                (if yap-rewrite-auto-accept
-                   (yap-rewrite-accept buffer start end message)
+                   (yap-rewrite-accept buffer start end)
                  (progn
                    (with-current-buffer yap--response-buffer
                      (setq header-line-format
@@ -220,9 +222,9 @@ Rewrite the buffer or selection if present with the returned response."
                                     (lambda () (interactive) (yap-rewrite-cancel)))
                      (local-set-key (kbd "C-c C-c")
                                     (lambda () (interactive)
-                                      (yap-rewrite-accept buffer start end message)))
+                                      (yap-rewrite-accept buffer start end (buffer-string))))
                      (local-set-key (kbd "C-c C-d")
-                                    (lambda () (interactive) (yap-rewrite-show-diff buffer start end message))))
+                                    (lambda () (interactive) (yap-rewrite-show-diff buffer start end (buffer-string)))))
                    (pop-to-buffer yap--response-buffer)))))))
       (message "[ERROR] Failed to fill template"))))
 

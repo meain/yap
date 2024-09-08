@@ -89,7 +89,7 @@ FINAL-CALLBACK is called with the final response."
                                         (content (alist-get 'text message)))
                               (when (and (string= event-type "content_block_delta")
                                          partial-callback)
-                                (funcall partial-callback content))))
+                                (funcall partial-callback (yap--utf8-convert content)))))
                           json-objects)))))))
 
 (provide 'yap-anthropic)

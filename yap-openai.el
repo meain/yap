@@ -97,10 +97,9 @@ FINAL-CALLBACK is called with the final response."
                             (when-let* ((message
                                          (alist-get 'content
                                                     (alist-get 'delta
-                                                               (aref (alist-get 'choices x) 0))))
-                                        (utf8-message (decode-coding-string (string-make-unibyte message) 'utf-8)))
+                                                               (aref (alist-get 'choices x) 0)))))
                               (when partial-callback
-                                (funcall partial-callback utf8-message))))
+                                (funcall partial-callback (yap--utf8-convert message)))))
                           json-objects)))))))
 
 (provide 'yap-openai)

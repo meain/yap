@@ -102,6 +102,10 @@
   (interactive)
   (display-buffer yap--response-buffer))
 
+(defun yap--utf8-convert (message)
+  "Convert MESSAGE to UTF-8."
+  (decode-coding-string (string-make-unibyte message) 'utf-8))
+
 (defun yap--handle-error (url headers content err)
   "Write the URL, HEADERS, CONTENT and ERR into the *yap-errors* buffer."
   (let* ((error-buffer (get-buffer-create "*yap-errors*"))
