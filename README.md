@@ -15,7 +15,9 @@ or even buffer rewrites.
 
 https://github.com/user-attachments/assets/b947e1e5-8d34-4dbc-aacd-20a06beb74c7
 
-*If you like this, you might also like [meain/yaq](https://github.com/meain/yaq).*
+*You can see more screen casts
+[here](https://github.com/meain/yap/issues/2). Also, if you like this,
+you might also like [meain/yaq](https://github.com/meain/yaq).*
 
 ---
 
@@ -23,7 +25,7 @@ https://github.com/user-attachments/assets/b947e1e5-8d34-4dbc-aacd-20a06beb74c7
 
 - **Prompt Templates**: Easily call predefined templates for common tasks.
 - **Buffer Modifications**: Modify your buffer with responses from LLMs.
-- **Service Support**: Currently supports only OpenAI
+- **Service Support**: Currently supports OpenAI, Anthropic and Ollama
 - **Custom Templates**: Create and use your own templates.
 
 ## Installation
