@@ -204,7 +204,8 @@ Rewrite the buffer or selection if present with the returned response."
                (when first-chunk
                  (setq first-chunk nil)
                  (yap-show-response-buffer)
-                 (funcall crrent-major-mode))
+                 (with-current-buffer (get-buffer-create yap--response-buffer)
+                   (funcall crrent-major-mode)))
                (yap--insert-chunk-to-response-buffer chunk))
              (lambda (_message)
                ;; Using buffer text instead of message, this will let the user edit
