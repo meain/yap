@@ -87,22 +87,21 @@ FINAL-CALLBACK is called with the final response."
                          (json-lines (seq-filter (lambda (x) (ignore-errors (json-read-from-string x))) trimmed-lines))
                          ;; convert to json-objects
                          (json-objects (mapcar 'json-read-from-string json-lines)))
-                    (with-current-buffer yap--response-buffer
-                      ;; Save last line to prev-pending in case it is cut off
-                      (if (< (length json-lines) (length trimmed-lines))
-                          (setq prev-pending (car (last lines)))
-                        (setq prev-pending ""))
+                    ;; Save last line to prev-pending in case it is cut off
+                    (if (< (length json-lines) (length trimmed-lines))
+                        (setq prev-pending (car (last lines)))
+                      (setq prev-pending ""))
 
-                      ;; Data is in choices.0.delta.content
-                      (mapc (lambda (x)
-                              (when-let* ((message
-                                           (alist-get 'content
-                                                      (alist-get 'delta
-                                                                 (aref (alist-get 'choices x) 0))))
-                                          (utf8-message (decode-coding-string (string-make-unibyte message) 'utf-8)))
-                                (when partial-callback
-                                  (funcall partial-callback utf8-message))))
-                            json-objects))))))))
+                    ;; Data is in choices.0.delta.content
+                    (mapc (lambda (x)
+                            (when-let* ((message
+                                         (alist-get 'content
+                                                    (alist-get 'delta
+                                                               (aref (alist-get 'choices x) 0))))
+                                        (utf8-message (decode-coding-string (string-make-unibyte message) 'utf-8)))
+                              (when partial-callback
+                                (funcall partial-callback utf8-message))))
+                          json-objects)))))))
 
 (provide 'yap-openai)
 ;;; yap-openai.el ends here

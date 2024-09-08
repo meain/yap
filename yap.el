@@ -98,6 +98,7 @@ CALLBACK is the function to call with the final response."
 (defun yap--get-llm-response (messages partial-callback &optional final-callback)
   "Get LLM response for MESSAGES.
 Call PARTIAL-CALLBACK with each chunk, FINAL-CALLBACK with final response."
+  (yap--clean-response-buffer)
   (message "Processing request via %s and %s model..." yap-service yap-model)
   (pcase yap-service
     ("openai" (yap--get-llm-response:openai messages partial-callback final-callback))
@@ -134,7 +135,6 @@ The response from LLM is displayed in the *yap-response* buffer."
     (if llm-messages
         ;; TODO yap--get-llm-response is not a good name anymore
         (let ((buffer (current-buffer)))
-          (yap--clean-response-buffer)
           (let ((first-chunk t))
             (yap--get-llm-response llm-messages
                                    (lambda (chunk)
@@ -197,7 +197,6 @@ Rewrite the buffer or selection if present with the returned response."
               (crrent-major-mode major-mode)
               (start (if (region-active-p) (region-beginning) (point-min)))
               (end (if (region-active-p) (region-end) (point-max))))
-          (yap--clean-response-buffer)
           (let ((first-chunk t))
             (yap--get-llm-response
              llm-messages
