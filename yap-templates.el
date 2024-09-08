@@ -72,13 +72,33 @@ extract the main content and then summarizes it."
   (let* ((url (read-string "URL: "))
          (content (shell-command-to-string (format "readable %s" url))))
     `(("system" . ,(concat "You are Summarizer AI. You help summarize websites. I'll provide you with the content and the url."
-                          "Give a 2 line summary at the top with a point by point breakdown of the article (max 10 points). "
-                          "Use markdown when necessary. Retain the relative order in which data is presented in the article. Use emojies to make it more engaging. "
-                          "No need to have headers like Article summary or point by point breakdown."))
+                           "Give a 2 line summary at the top with a point by point breakdown of the article (max 10 points). "
+                           "Use markdown when necessary. Retain the relative order in which data is presented in the article. Use emojies to make it more engaging. "
+                           "No need to have headers like Article summary or point by point breakdown."))
       ("assistant" . "Give me the content to summarize.")
       ("user" . ,content)
       ("assistant" . "What is the URL? I'll only use it for additional context.")
       ("user" . ,url))))
+
+(defun yap-templates--complete-code ()
+  "Template to autocompete code in the buffer."
+  (let* ((buffer (current-buffer))
+         (language (yap--get-buffer-language buffer))
+         (language-text (if language (concat "The code is in " language ". ")))
+         (before (yap--get-text-before buffer))
+         (after (yap--get-text-after buffer)))
+    `(("system" . ,(concat "You are Code Completer AI. You help complete code partially written by the user."
+                           "I'll provide you the code that user has currently written, you are to suggest what comes next."
+                           "I'll also include what the user had added below so that you are not rewriting that part"
+                           "No need to have headers like Code completion or point by point breakdown."
+                           "Do not use markdown code blocks, just give me the code"
+                           "NEVER repeat any lines already written by user"))
+      ("assistant" . "What language is the code in?")
+      ("user" . ,language-text)
+      ("assistant" . "What has already been written?")
+      ("user" . ,before)
+      ("assistant" . "What is below the current point?")
+      ("user" . ,after))))
 
 (defun yap--retrieve-awesome-chatgpt-prompts (&optional force-update)
   "Retrieve and cache prompts from awesome-chatgpt-prompts.
@@ -143,9 +163,10 @@ PROMPT is follow up user prompt."
     (emojify . yap-templates--emojify)
     (who-what . yap-templates--who-what)
     (summarize-webpage . yap-templates--summarize-webpage)
+    (complete-code . yap-templates--complete-code)
 
     ;; Random/Extras
-    ; Gets prompt if {{prompt}} in the template
+    ;; Gets prompt if {{prompt}} in the template
     (roast . yap-templates--roast-code)
     (joke . "Tell me a brand new joke") ;; works better than "tell me a joke"
     (difference-between . "What is the difference between {{First}} and {{Second}}?"))
