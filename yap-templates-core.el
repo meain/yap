@@ -69,8 +69,44 @@ If the buffer has a selection, then the selection is used as context."
     (if (provided-mode-derived-p major-mode 'prog-mode)
         (string-trim (string-trim (symbol-name major-mode) nil "-ts-mode") nil "-mode")
       nil)))
-
 (defun yap-template-buffer-context (system-prompt prompt buffer)
+  "Similar to `yap-template-selection-context', but with buffer as context.
+`SYSTEM-PROMPT', `PROMPT' and `BUFFER' serve the same purpose as the
+name suggest.
+
+Order of messages:
+- system-prompt
+- assistant: give me full content
+- user: full content
+- assistant: now selection
+- user: selection
+- assistant: what can I help you with?
+- user: {{{prompt}}}"
+  (let* ((selection (yap--get-selected-text buffer))
+         (language (yap--get-buffer-language buffer))
+         (language-text (if language (concat "The code is in " language ". ")))
+         (full (yap--get-buffer-text buffer)))
+    (if selection
+        `(("system" . ,system-prompt)
+          ("user" . ,(concat "I'll provide a document in which I have highlighted a section. "
+                             language-text
+                             "Answer should be specific to the highlighted section but use "
+                             "the rest of the text as context to understand the patterns and intent."))
+          ("assistant" . "Sure, give me the full document content")
+          ("user" . ,full)
+          ("assistant" . "OK. What is the highlighted section?")
+          ("user" . ,selection)
+          ("assistant" . "What can I help you with?")
+          ("user" . ,prompt))
+      `(("system" . ,system-prompt)
+        ("user" . ,(concat "I'll provide you with the document I'm working on and a follow up question"
+                           "Answer my follow up question using the context provided."))
+        ("assistant" . "Sure, give me the full document content")
+        ("user" . ,full)
+        ("assistant" . "What can I help you with?")
+        ("user" . ,prompt)))))
+
+(defun yap-template-split-buffer-context (system-prompt prompt buffer)
   "Similar to `yap-template-selection-context', but with buffer as context.
 `SYSTEM-PROMPT', `PROMPT' and `BUFFER' serve the same purpose as the
 name suggest.
@@ -142,6 +178,11 @@ Order of messages:
         (let ((selection (buffer-substring (region-beginning) (region-end))))
           selection)
       nil)))
+
+(defun yap--get-buffer-text (buffer)
+  "Get the text before the point or selection in the specified BUFFER."
+  (with-current-buffer buffer
+    (buffer-substring-no-properties (point-min) (point-max))))
 
 (defun yap--get-text-before (buffer)
   "Get the text before the point or selection in the specified BUFFER."

@@ -28,6 +28,14 @@
   "A default template for `yap-rewrite' with buffer context."
   (yap-with-prompt #'yap-template-rewrite-buffer-context))
 
+(defun yap-template-prompt-split-buffer-context--default ()
+  "A default template for `yap-prompt' with split-buffer context."
+  (yap-with-prompt #'yap-template-prompt-split-buffer-context))
+
+(defun yap-template-rewrite-split-buffer-context--default ()
+  "A default template for `yap-rewrite' with split-buffer context."
+  (yap-with-prompt #'yap-template-rewrite-split-buffer-context))
+
 (defun yap-temlpates--summarize ()
   "Summarize the selected text."
   (yap-template-prompt "Summarize the given text. Use bullet points for key ideas."))
@@ -151,6 +159,8 @@ PROMPT is follow up user prompt."
     (default-rewrite . yap-template-rewrite--default)
     (default-prompt-buffer-context . yap-template-prompt-buffer-context--default)
     (default-rewrite-buffer-context . yap-template-rewrite-buffer-context--default)
+    (default-prompt-split-buffer-context . yap-template-prompt-split-buffer-context--default)
+    (default-rewrite-split-buffer-context . yap-template-rewrite-split-buffer-context--default)
 
     ;; Community
     (community:awesome-chatgpt-prompts .  yap-templates--awesome-chatgpt-prompts)
