@@ -125,5 +125,57 @@
       (insert (format "Error:\n%s" body))))
   (message "An error occurred. Please check the *yap-errors* buffer for details."))
 
+
+;;; Provider specific stuff
+;; Keeping it as a variable so that users can update it
+(defcustom yap--anthropic-models
+  '("claude-3-5-sonnet"
+    "claude-3-opus"
+    "claude-3-sonnet"
+    "claude-3-haiku")
+  "List of Anthropic models available for use."
+  :type '(repeat string)
+  :group 'yap)
+
+(defun yap--get-models:anthropic ()
+  "Get available models from Anthropic.
+Anthropic does not publish an API endpoint and so we have to manually
+manage it unfortunately."
+  yap--anthropic-models)
+
+(defconst yap-llm-base-url:openai "https://api.openai.com/v1"
+  "Base URL for the OpenAI API.")
+
+(defun yap--get-models:openai ()
+  "Get a list of OpenAI models available."
+  (let* ((url-request-method "GET")
+         (url-request-extra-headers
+          `(("Content-Type" . "application/json")
+            ("Authorization" . ,(format "Bearer %s" yap-api-key:openai))))
+         (url-request-data-type 'json)
+         (resp (with-current-buffer (url-retrieve-synchronously
+                                     (concat yap-llm-base-url:openai "/models"))
+                 (goto-char (point-min))
+                 (re-search-forward "^$")
+                 (json-read))))
+    (if (and resp (alist-get 'data resp))
+        (mapcar (lambda (x) (alist-get 'id x))
+                (alist-get 'data resp))
+      (message "[ERROR] Unable to get models: %s"
+               (if (not resp)
+                   "Response is empty"
+                 (yap--get-error-message resp)))
+      nil)))
+
+(defcustom yap-llm-base-url:ollama "http://localhost:11434/v1"
+  "The base URL for Ollama."
+  :type 'string
+  :group 'yap)
+
+(defun yap--get-models:ollama ()
+  "Get the models for Ollama."
+  (let ((yap-llm-base-url:openai yap-llm-base-url:ollama))
+    (yap--get-models:openai)))
+
 (provide 'yap-utils)
 ;;; yap-utils.el ends here

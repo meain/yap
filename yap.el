@@ -100,9 +100,9 @@ CALLBACK is the function to call with the final response."
   (if yap-llm-provider-override
       yap-llm-provider-override
     (pcase yap-service
-      ("openai" (make-llm-openai :key yap-api-key:openai))
-      ("ollama" (make-llm-ollama))
-      ("anthropic" (make-llm-claude :key yap-api-key:anthropic))
+      ("openai" (make-llm-openai :key yap-api-key:openai :chat-model yap-model))
+      ("ollama" (make-llm-ollama :chat-model yap-model))
+      ("anthropic" (make-llm-claude :key yap-api-key:anthropic :chat-model yap-model))
       (_ (message "[ERROR] Unsupported service: %s" yap-service) nil))))
 
 (defun yap--llm-generate-prompt (llm-messages)
@@ -113,13 +113,14 @@ CALLBACK is the function to call with the final response."
 (defun yap--do (messages partial-callback &optional final-callback)
   "Get LLM response for MESSAGES.
 Call PARTIAL-CALLBACK with each chunk, FINAL-CALLBACK with final response."
-  (let ((llm-warn-on-nonfree nil) ;; This is a personal choice
+  (let ((llm-warn-on-nonfree nil) ; this is a personal choice
+        ;; (llm-log t) ; use this to log
         (llm-provider (yap--get-provider))
         (prompt (yap--llm-generate-prompt messages)))
     (yap--clean-response-buffer)
     (message "Processing request via %s and %s model..." yap-service yap-model)
     (llm-chat-streaming llm-provider prompt partial-callback final-callback
-                        (lambda (error) (message "Error processing request: %s" error)))))
+                        (lambda (_ error) (message "Error processing request: %s" error)))))
 
 (defun yap-buffer-close ()
   "Close the response buffer."
