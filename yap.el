@@ -95,8 +95,18 @@ CALLBACK is the function to call with the final response."
         (if callback (funcall callback resp)))
     (message "[ERROR] Unable to get response %s" (yap--get-error-message resp))))
 
-(defvar yap-llm-provider-override nil "Override the LLM provider. Supports any provider from ahyatt/llm.")
+(defcustom yap-llm-provider-override nil
+  "Override the LLM provider.
+Supports any provider from ahyatt/llm."
+  :group 'yap)
+
 (defun yap--get-provider ()
+  "Retrieve the LLM provider based on the specified service.
+
+If `yap-llm-provider-override` is set, return that provider.  Otherwise,
+determine the provider based on the value of `yap-service`.  Supported
+services include 'openai', 'ollama', and 'anthropic'.  If an unsupported
+service is specified, log an error message and return nil."
   (if yap-llm-provider-override
       yap-llm-provider-override
     (pcase yap-service
@@ -106,6 +116,7 @@ CALLBACK is the function to call with the final response."
       (_ (message "[ERROR] Unsupported service: %s" yap-service) nil))))
 
 (defun yap--llm-generate-prompt (llm-messages)
+  "Generate prompt based on `LLM-MESSAGES'."
   (make-llm-chat-prompt
    :context (yap--system-message llm-messages)
    :interactions (yap--convert-messages-sans-system llm-messages)))
@@ -141,7 +152,7 @@ Call PARTIAL-CALLBACK with each chunk, FINAL-CALLBACK with final response."
 (defun yap-prompt (&optional template)
   "Prompt the user with the given PROMPT using TEMPLATE if provided.
 If TEMPLATE is not provided or nil, use the default template.
-If invoked with a universal argument (C-u), prompt for TEMPLATE selection.
+If invoked with a universal argument \\[universal-argument], prompt for TEMPLATE selection.
 The response from LLM is displayed in the *yap-response* buffer."
   (interactive "P")
   (let* ((template (if (equal template '(4)) ; Check if C-u (universal argument) is provided
