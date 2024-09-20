@@ -129,10 +129,10 @@
 ;;; Provider specific stuff
 ;; Keeping it as a variable so that users can update it
 (defcustom yap--anthropic-models
-  '("claude-3-5-sonnet"
-    "claude-3-opus"
-    "claude-3-sonnet"
-    "claude-3-haiku")
+  '("claude-3-5-sonnet-20240620"
+    "claude-3-opus-20240229"
+    "claude-3-sonnet-20240229"
+    "claude-3-haiku-20240307")
   "List of Anthropic models available for use."
   :type '(repeat string)
   :group 'yap)
