@@ -16,8 +16,21 @@
 (defun yap--insert-chunk-to-response-buffer (chunk)
   "Insert CHUNK to the response buffer."
   (with-current-buffer (get-buffer-create yap--response-buffer)
-    (goto-char (point-max))
-    (insert chunk)))
+    (save-excursion
+      (goto-char (point-max))
+      (insert chunk))))
+
+(defun yap--replace-response-buffer (content)
+  "Replace the response buffer with CONTENT."
+  (with-current-buffer (get-buffer-create yap--response-buffer)
+    (let* ((current-content (buffer-string))
+           (is-substring (string-prefix-p current-content content))
+           (chunk (string-remove-prefix current-content content)))
+      (when (not (string= current-content content))
+        (save-excursion
+          (when (not is-substring) (erase-buffer))
+          (goto-char (point-max))
+          (insert chunk))))))
 
 (defun yap-show-response-buffer ()
   "Show the yap response buffer."
@@ -70,32 +83,25 @@
       (alist-get 'message (alist-get 'error object))
     object))
 
-(defun yap--convert-messages (messages)
-  "Convert MESSAGES from (role . content) to OpenAI format."
-  (mapcar (lambda (pair)
-            (let ((role (car pair))
-                  (content (cdr pair)))
-              `(("role" . ,role) ("content" . ,content))))
-          messages))
-
 (defun yap--convert-messages-sans-system (messages)
   "Convert MESSAGES from (role . content) to OpenAI format, without system message."
   (seq-filter #'identity
-              (mapcar (lambda (pair)
-                        (let ((role (car pair))
-                              (content (cdr pair)))
-                          (unless (string= role "system")
-                            `(("role" . ,role) ("content" . ,content)))))
-                      messages)))
+              (seq-map (lambda (pair)
+                         (let ((role (intern (car pair)))
+                               (content (cdr pair)))
+                           (unless (string= role 'system)
+                             (make-llm-chat-prompt-interaction
+                              :role role
+                              :content content))))
+                       messages)))
 
 (defun yap--system-message (messages)
   "Check if the given MESSAGES contain a system message."
-  (let ((system-message (seq-find (lambda (pair)
-                                    (string= (car pair) "system"))
-                                  messages)))
-    (if system-message
-        (cdr system-message)
-      nil)))
+  (when-let ((system-message
+              (seq-find (lambda (pair)
+                          (string= (car pair) "system"))
+                        messages)))
+    (cdr system-message)))
 
 (defun yap-display-output-buffer ()
   "Display the output buffer for yap."

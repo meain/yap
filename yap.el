@@ -3,7 +3,7 @@
 ;; URL: https://github.com/meain/yap
 ;; Keywords: llm, convenience
 ;; SPDX-License-Identifier: Apache-2.0
-;; Package-Requires: ((emacs "25.1") (plz "0.9"))
+;; Package-Requires: ((emacs "25.1") (plz "0.9") (llm "0.17"))
 ;; Version: 0.1
 
 ;;; Commentary:
@@ -19,13 +19,13 @@
 
 (require 'json)
 (require 'url)
-(require 'plz)
+(require 'llm)
+(require 'llm-openai)
+(require 'llm-ollama)
+(require 'llm-claude)
 
 (require 'yap-templates)
 (require 'yap-utils)
-(require 'yap-openai)
-(require 'yap-ollama)
-(require 'yap-anthropic)
 
 (defgroup yap nil
   "Customization options for the yap command."
@@ -95,16 +95,31 @@ CALLBACK is the function to call with the final response."
         (if callback (funcall callback resp)))
     (message "[ERROR] Unable to get response %s" (yap--get-error-message resp))))
 
-(defun yap--get-llm-response (messages partial-callback &optional final-callback)
+(defvar yap-llm-provider-override nil "Override the LLM provider. Supports any provider from ahyatt/llm.")
+(defun yap--get-provider ()
+  (if yap-llm-provider-override
+      yap-llm-provider-override
+    (pcase yap-service
+      ("openai" (make-llm-openai :key yap-api-key:openai))
+      ("ollama" (make-llm-ollama))
+      ("anthropic" (make-llm-claude :key yap-api-key:anthropic))
+      (_ (message "[ERROR] Unsupported service: %s" yap-service) nil))))
+
+(defun yap--llm-generate-prompt (llm-messages)
+  (make-llm-chat-prompt
+   :context (yap--system-message llm-messages)
+   :interactions (yap--convert-messages-sans-system llm-messages)))
+
+(defun yap--do (messages partial-callback &optional final-callback)
   "Get LLM response for MESSAGES.
 Call PARTIAL-CALLBACK with each chunk, FINAL-CALLBACK with final response."
-  (yap--clean-response-buffer)
-  (message "Processing request via %s and %s model..." yap-service yap-model)
-  (pcase yap-service
-    ("openai" (yap--get-llm-response:openai messages partial-callback final-callback))
-    ("ollama" (yap--get-llm-response:ollama messages partial-callback final-callback))
-    ("anthropic" (yap--get-llm-response:anthropic messages partial-callback final-callback))
-    (_ (message "[ERROR] Unsupported service: %s" yap-service) nil)))
+  (let ((llm-warn-on-nonfree nil) ;; This is a personal choice
+        (llm-provider (yap--get-provider))
+        (prompt (yap--llm-generate-prompt messages)))
+    (yap--clean-response-buffer)
+    (message "Processing request via %s and %s model..." yap-service yap-model)
+    (llm-chat-streaming llm-provider prompt partial-callback final-callback
+                        (lambda (error) (message "Error processing request: %s" error)))))
 
 (defun yap-buffer-close ()
   "Close the response buffer."
@@ -133,22 +148,26 @@ The response from LLM is displayed in the *yap-response* buffer."
                      (or template 'default-prompt))) ; Otherwise, use default template if not provided
          (llm-messages (yap--get-filled-template template)))
     (if llm-messages
-        ;; TODO yap--get-llm-response is not a good name anymore
         (let ((buffer (current-buffer)))
           (let ((first-chunk t))
-            (yap--get-llm-response llm-messages
-                                   (lambda (chunk)
-                                     (when first-chunk
-                                       (setq first-chunk nil)
-                                       (yap-show-response-buffer))
-                                     (yap--insert-chunk-to-response-buffer chunk)))))
+            (yap--do
+             llm-messages
+             (lambda (resp)
+               (when first-chunk
+                 (setq first-chunk nil)
+                 (yap-show-response-buffer))
+               (setq previous resp)
+               (yap--replace-response-buffer resp))
+             (lambda (resp)
+               (yap--process-response llm-messages resp
+                                      'yap--replace-response-buffer)))))
       (message "[ERROR] Failed to fill template"))))
 
 (defun yap-rewrite-cancel ()
   "Cancel the rewrite and kill the buffer."
   (with-current-buffer yap--response-buffer
     (kill-buffer)
-    (message "Cancelled rewrite")))
+    (message "Canceled rewrite")))
 
 (defun yap-rewrite-show-diff (buffer start end message)
   "Show the diff between the BUFFER and the rewritten MESSAGE.
@@ -198,16 +217,16 @@ Rewrite the buffer or selection if present with the returned response."
               (start (if (region-active-p) (region-beginning) (point-min)))
               (end (if (region-active-p) (region-end) (point-max))))
           (let ((first-chunk t))
-            (yap--get-llm-response
+            (yap--do
              llm-messages
-             (lambda (chunk)
+             (lambda (resp)
                (when first-chunk
                  (setq first-chunk nil)
                  (yap-show-response-buffer)
                  (with-current-buffer (get-buffer-create yap--response-buffer)
                    (funcall crrent-major-mode)))
-               (yap--insert-chunk-to-response-buffer chunk))
-             (lambda (_message)
+               (yap--replace-response-buffer resp))
+             (lambda (resp)
                ;; Using buffer text instead of message, this will let the user edit
                ;; the llm response and then use the edited version for rewrites.
                (if yap-rewrite-auto-accept
@@ -226,6 +245,7 @@ Rewrite the buffer or selection if present with the returned response."
                                       (yap-rewrite-accept buffer start end (buffer-string))))
                      (local-set-key (kbd "C-c C-d")
                                     (lambda () (interactive) (yap-rewrite-show-diff buffer start end (buffer-string)))))
+                   (yap--replace-response-buffer resp)
                    (pop-to-buffer yap--response-buffer)))))))
       (message "[ERROR] Failed to fill template"))))
 
@@ -238,11 +258,13 @@ Kinda like `yap-rewrite', but just writes instead of replace."
                      (or template 'default-rewrite))) ; Otherwise, use default template if not provided
          (llm-messages (yap--get-filled-template template)))
     (if llm-messages
-        (let ((buffer (current-buffer)))
-          (yap--get-llm-response llm-messages
-                                 (lambda (message)
-                                   (with-current-buffer buffer
-                                     (insert message)))))
+        (let ((buffer (current-buffer))
+              (previous ""))
+          (yap--do llm-messages
+                   (lambda (resp)
+                     (with-current-buffer buffer
+                       (insert (string-remove-prefix previous resp))
+                       (setq previous resp)))))
       (message "[ERROR] Failed to fill template"))))
 
 (provide 'yap)
