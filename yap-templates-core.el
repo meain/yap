@@ -30,12 +30,10 @@
 
 (defconst yap--default-system-prompt-for-rewrite
   (concat "You are a helpful assistant who helps rewrite/refactor code and prose. "
-          "Give concise answers to questions. "
-          "Don't be too chatty. "
           "Do not ask or suggest follow up questions. "
-          "For code responses, just provide the raw code snippet without additional text or markers above or below"
-          "as in do not add ``` in the response. "
-          "Provide the full code to be rewritten and not just the new changes if asked to do code refactor.")
+          "For code responses, ONLY provide the raw code without additional text or markers above or below."
+          "NEVER put code block in ``` in the response. "
+          "ALWAYS provide the full code to be rewritten and not just the new changes if asked to do code refactor.")
   "The system prompt to use for the `yap-rewrite' command.")
 
 (defun yap--create-messages (system-prompt user-prompt &optional context)
