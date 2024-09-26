@@ -193,6 +193,7 @@ START and END are the region to replace in original buffer."
                 (call-process "diff" nil t nil "-u" temp-original temp-rewritten)
                 (buffer-string)))
       (diff-mode)
+      (read-only-mode)
       (pop-to-buffer (current-buffer))
       (delete-file temp-original)
       (delete-file temp-rewritten))))
