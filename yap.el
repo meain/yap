@@ -188,13 +188,14 @@ START and END are the region to replace in original buffer."
     (with-temp-file temp-rewritten
       (insert message))
     (with-current-buffer (get-buffer-create "*yap-rewrite-diff*")
+      (read-only-mode -1)
       (erase-buffer)
       (insert (with-temp-buffer
                 (call-process "diff" nil t nil "-u" temp-original temp-rewritten)
                 (buffer-string)))
       (diff-mode)
-      (read-only-mode)
       (pop-to-buffer (current-buffer))
+      (read-only-mode)
       (delete-file temp-original)
       (delete-file temp-rewritten))))
 
