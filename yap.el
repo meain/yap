@@ -41,11 +41,6 @@
   :type 'string
   :group 'yap)
 
-(defcustom yap-api-key-openai nil
-  "The API key to use with OpenAI models in the yap command."
-  :type 'string
-  :group 'yap)
-
 (defcustom yap-log-requests nil
   "Provide a folder to log all the requests and responses."
   :type 'string
