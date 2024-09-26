@@ -20,6 +20,11 @@
       (goto-char (point-max))
       (insert chunk))))
 
+(defcustom yap-follow-output nil
+  "Whether to follow the output buffer or not."
+  :type 'boolean
+  :group 'yap)
+
 (defun yap--replace-response-buffer (content)
   "Replace the response buffer with CONTENT."
   (with-current-buffer (get-buffer-create yap--response-buffer)
@@ -30,7 +35,9 @@
         (save-excursion
           (when (not is-substring) (erase-buffer))
           (goto-char (point-max))
-          (insert chunk))))))
+          (insert chunk))
+        (when yap-follow-output
+          (goto-char (point-max)))))))
 
 (defun yap-show-response-buffer ()
   "Show the yap response buffer."
