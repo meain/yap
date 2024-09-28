@@ -106,9 +106,9 @@
   "Check if the given MESSAGES contain a system message."
   (when-let ((system-message
               (seq-find (lambda (message)
-                          (string= (plist-get :role message) "system"))
+                          (string= (plist-get message :role) "system"))
                         messages)))
-    (cdr system-message)))
+    (plist-get system-message :content)))
 
 (defun yap-display-output-buffer ()
   "Display the output buffer for yap."
