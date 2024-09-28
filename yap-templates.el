@@ -112,25 +112,6 @@ extract the main content and then summarizes it."
       (:role "assistant" :content "What is the URL? I'll only use it for additional context.")
       (:role "user" :content ,url))))
 
-
-(defun yap-templates--complete-code ()
-  "Template to autocomplete code in the buffer."
-  (let* ((buffer (current-buffer))
-         (language (yap--get-buffer-language buffer))
-         (language-text (if language (concat "The code is in " language ". ")))
-         (before (yap--get-text-before buffer))
-         (after (yap--get-text-after buffer)))
-    `((:role "system" :content ,(concat "You are Code Completer AI."
-                                        "I'll provide you the code before and after the cursor, you are to suggest what comes in the middle"
-                                        "Just give me the code without additional comments or code markers."
-                                        "ONLY give me the code"
-                                        "NEVER repeat any lines already written by user"))
-      (:role "user" :content ,language-text)
-      (:role "assistant" :content "What has already been written?")
-      (:role "user" :content ,before)
-      (:role "assistant" :content "What is below the current point?")
-      (:role "user" :content ,after))))
-
 (defun yap--retrieve-awesome-chatgpt-prompts (&optional force-update)
   "Retrieve and cache prompts from awesome-chatgpt-prompts.
 The data is cached for a day, unless FORCE-UPDATE is non-nil.
@@ -198,7 +179,6 @@ PROMPT is follow up user prompt."
     (emojify . yap-templates--emojify)
     (who-what . yap-templates--who-what)
     (summarize-webpage . yap-templates--summarize-webpage)
-    (complete-code . yap-templates--complete-code)
 
     ;; Random/Extras
     ;; Gets prompt if {{prompt}} in the template
