@@ -44,6 +44,9 @@ To install `yap`, add the following to your Emacs configuration:
   (yap-set-service "openai") ; default: openai
   (yap-set-model "gpt-4o") ; default: gpt-4o
 
+  ;; You could also set any provider from ahyatt/llm like below
+  (setq yap-llm-provider-override (make-llm-openai :key openai-api-key :chat-model model))
+
   ;; Add window rules for *yap-response* buffer so that it shows up at
   ;; top of the frame
   (add-to-list 'display-buffer-alist
@@ -108,6 +111,12 @@ but the default ones are optimized for selection.
    ```emacs-lisp
    (yap-prompt 'default-prompt "Generate documentation for the following function.")
    ```
+
+4. **Generating Shell Command**:
+    When you need to generate a shell command for a given task, you can use the `generate-shell-command` template with `yap-write` in the shell buffer.
+    ```emacs-lisp
+    (yap-write 'generate-shell-command)
+    ```
 
 ## Creating New Templates
 
