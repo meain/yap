@@ -44,6 +44,14 @@
   "Explain selected code."
   (yap-template-prompt "Give a high level overview of the code and explain any tricky parts. Keep it short."))
 
+(defun yap-templates--generate-shell-command ()
+  "Generate shell command."
+  (let ((task (read-string "Task: ")))
+    (yap-template-prompt (concat "Generate a shell command to do the following task."
+                                "Only return the command to be run."
+                                "Never put it in a code block.\n"
+                                "Task:" task))))
+
 (defun yap-templates--explain-code-with-comments ()
   "Explain selected code."
   (yap-template-prompt (concat "Explain the code provided. Use comments to explain the code. "
@@ -168,6 +176,7 @@ PROMPT is follow up user prompt."
     ;; Biuiltins
     (summarize . yap-temlpates--summarize)
     (explain-code . yap-templates--explain-code)
+    (generate-shell-command . yap-templates--generate-shell-command)
     (explain-code-with-comments . yap-templates--explain-code-with-comments)
     (optimize-code . yap-templates--optimize-code)
     (emojify . yap-templates--emojify)
