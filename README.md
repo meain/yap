@@ -118,6 +118,8 @@ but the default ones are optimized for selection.
     (yap-write 'generate-shell-command)
     ```
 
+*Take a look at `yap-templates` in code to see all the available templates.*
+
 ## Creating New Templates
 
 Creating new templates in `yap` is straightforward. Templates under
