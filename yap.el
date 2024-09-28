@@ -80,24 +80,19 @@
             (model-name (completing-read "Model: " models)))
       (setq yap-model model-name)))
 
-(defun yap--process-response (messages resp callback)
-  "Process the final complete response from LLM.
-MESSAGES is the original messages sent to LLM.
-RESP is the final response from LLM.
-CALLBACK is the function to call with the final response."
+(defun yap--save-interaction (messages resp)
+  "Save llm `MESSAGES' and `RESP' to disk."
   (if resp
-      (progn
-        (when yap-log-requests
-          (mkdir yap-log-requests t)
-          ;; Save logs to disk
-          (let ((json-data (json-encode `(("service" . ,yap-service)
-                                          ("model" . ,yap-model)
-                                          ("messages" . ,messages)
-                                          ("response" . ,resp))))
-                (json-file (format "%s/%s.json" yap-log-requests (format-time-string "%Y%m%d-%H%M%S"))))
-            (with-temp-file json-file
-              (insert json-data))))
-        (if callback (funcall callback resp)))
+      (when yap-log-requests
+        (mkdir yap-log-requests t)
+        ;; Save the log of the request and the response to disk
+        (let ((json-data (json-encode `(("service" . ,yap-service)
+                                        ("model" . ,yap-model)
+                                        ("messages" . ,messages)
+                                        ("response" . ,resp))))
+              (json-file (format "%s/%s.json" yap-log-requests (format-time-string "%Y%m%d-%H%M%S"))))
+          (with-temp-file json-file
+            (insert json-data))))
     (message "[ERROR] Unable to get response %s" (yap--get-error-message resp))))
 
 (defcustom yap-llm-provider-override nil
@@ -176,8 +171,8 @@ The response from LLM is displayed in the *yap-response* buffer."
                (setq previous resp)
                (yap--replace-response-buffer resp))
              (lambda (resp)
-               (yap--process-response llm-messages resp
-                                      'yap--replace-response-buffer)))))
+               (yap--save-interaction llm-messages resp)
+               (yap--replace-response-buffer resp)))))
       (message "[ERROR] Failed to fill template"))))
 
 (defun yap-rewrite-cancel ()
@@ -247,6 +242,7 @@ Rewrite the buffer or selection if present with the returned response."
                    (funcall crrent-major-mode)))
                (yap--replace-response-buffer resp))
              (lambda (resp)
+               (yap--save-interaction llm-messages resp)
                ;; Using buffer text instead of message, this will let the user edit
                ;; the llm response and then use the edited version for rewrites.
                (if yap-rewrite-auto-accept
@@ -284,7 +280,9 @@ Kinda like `yap-rewrite', but just writes instead of replace."
                    (lambda (resp)
                      (with-current-buffer buffer
                        (insert (string-remove-prefix previous resp))
-                       (setq previous resp)))))
+                       (setq previous resp)))
+                   (lambda (resp)
+                     (yap--save-interaction llm-messages resp))))
       (message "[ERROR] Failed to fill template"))))
 
 (provide 'yap)
