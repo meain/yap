@@ -93,9 +93,9 @@
 (defun yap--convert-messages-sans-system (messages)
   "Convert MESSAGES from (role . content) to OpenAI format, without system message."
   (seq-filter #'identity
-              (seq-map (lambda (pair)
-                         (let ((role (intern (car pair)))
-                               (content (cdr pair)))
+              (seq-map (lambda (message)
+                         (let ((role (intern (plist-get message :role)))
+                               (content (plist-get message :content)))
                            (unless (string= role 'system)
                              (make-llm-chat-prompt-interaction
                               :role role
@@ -105,8 +105,8 @@
 (defun yap--system-message (messages)
   "Check if the given MESSAGES contain a system message."
   (when-let ((system-message
-              (seq-find (lambda (pair)
-                          (string= (car pair) "system"))
+              (seq-find (lambda (message)
+                          (string= (plist-get :role message) "system"))
                         messages)))
     (cdr system-message)))
 

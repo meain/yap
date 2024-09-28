@@ -103,34 +103,33 @@ It first fetches the content of the webpage, uses readable cli to
 extract the main content and then summarizes it."
   (let* ((url (read-string "URL: "))
          (content (shell-command-to-string (format "readable %s" url))))
-    `(("system" . ,(concat "You are Summarizer AI. You help summarize websites. I'll provide you with the content and the url."
-                           "Give a 2 line summary at the top with a point by point breakdown of the article (max 10 points). "
-                           "Use markdown when necessary. Retain the relative order in which data is presented in the article. Use emojies to make it more engaging. "
-                           "No need to have headers like Article summary or point by point breakdown."))
-      ("assistant" . "Give me the content to summarize.")
-      ("user" . ,content)
-      ("assistant" . "What is the URL? I'll only use it for additional context.")
-      ("user" . ,url))))
+    `((:role "system" :content ,(concat "You are Summarizer AI. You help summarize websites. I'll provide you with the content and the url."
+                                        "Give a 2 line summary at the top with a point by point breakdown of the article (max 10 points). "
+                                        "Use markdown when necessary. Retain the relative order in which data is presented in the article. Use emojies to make it more engaging. "
+                                        "No need to have headers like Article summary or point by point breakdown."))
+      (:role "assistant" :content "Give me the content to summarize.")
+      (:role "user" :content ,content)
+      (:role "assistant" :content "What is the URL? I'll only use it for additional context.")
+      (:role "user" :content ,url))))
+
 
 (defun yap-templates--complete-code ()
-  "Template to autocompete code in the buffer."
+  "Template to autocomplete code in the buffer."
   (let* ((buffer (current-buffer))
          (language (yap--get-buffer-language buffer))
          (language-text (if language (concat "The code is in " language ". ")))
          (before (yap--get-text-before buffer))
          (after (yap--get-text-after buffer)))
-    `(("system" . ,(concat "You are Code Completer AI. You help complete code partially written by the user."
-                           "I'll provide you the code that user has currently written, you are to suggest what comes next."
-                           "I'll also include what the user had added below so that you are not rewriting that part"
-                           "No need to have headers like Code completion or point by point breakdown."
-                           "Do not use markdown code blocks, just give me the code"
-                           "NEVER repeat any lines already written by user"))
-      ("assistant" . "What language is the code in?")
-      ("user" . ,language-text)
-      ("assistant" . "What has already been written?")
-      ("user" . ,before)
-      ("assistant" . "What is below the current point?")
-      ("user" . ,after))))
+    `((:role "system" :content ,(concat "You are Code Completer AI."
+                                        "I'll provide you the code before and after the cursor, you are to suggest what comes in the middle"
+                                        "Just give me the code without additional comments or code markers."
+                                        "ONLY give me the code"
+                                        "NEVER repeat any lines already written by user"))
+      (:role "user" :content ,language-text)
+      (:role "assistant" :content "What has already been written?")
+      (:role "user" :content ,before)
+      (:role "assistant" :content "What is below the current point?")
+      (:role "user" :content ,after))))
 
 (defun yap--retrieve-awesome-chatgpt-prompts (&optional force-update)
   "Retrieve and cache prompts from awesome-chatgpt-prompts.

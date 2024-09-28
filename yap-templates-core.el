@@ -39,16 +39,16 @@
 (defun yap--create-messages (system-prompt user-prompt &optional context)
   "Generate Messages to send to the llm.
 Use the with the given `SYSTEM-PROMPT', `USER-PROMPT' and `CONTEXT'."
-  `(("system" . ,system-prompt)
+  `((:role "system" :content ,system-prompt)
     ,@(when context
-        `(("user" . ,context)
-          ("assistant" . "Sure. What would you like me to help with?")))
-    ("user" . ,user-prompt)))
+        `((:role "user" :content ,context)
+          (:role "assistant" :content "Sure. What would you like me to help with?")))
+    (:role "user" :content ,user-prompt)))
 
 (defun yap-template-simple (prompt)
   "Generate a simple template for PROMPT."
-  `(("system" . ,yap--default-system-prompt-for-prompt)
-    ("user" . ,prompt)))
+  `((:role "system" :content ,yap--default-system-prompt-for-prompt)
+    (:role "user" :content ,prompt)))
 
 (defun yap-template-selection-context (system-prompt prompt buffer)
   "Create yap template using `SYSTEM-PROMPT', `PROMPT' and `BUFFER'.
@@ -85,24 +85,25 @@ Order of messages:
          (language-text (if language (concat "The code is in " language ". ")))
          (full (yap--get-buffer-text buffer)))
     (if selection
-        `(("system" . ,system-prompt)
-          ("user" . ,(concat "I'll provide a document in which I have highlighted a section. "
-                             language-text
-                             "Answer should be specific to the highlighted section but use "
-                             "the rest of the text as context to understand the patterns and intent."))
-          ("assistant" . "Sure, give me the full document content")
-          ("user" . ,full)
-          ("assistant" . "OK. What is the highlighted section?")
-          ("user" . ,selection)
-          ("assistant" . "What can I help you with?")
-          ("user" . ,prompt))
-      `(("system" . ,system-prompt)
-        ("user" . ,(concat "I'll provide you with the document I'm working on and a follow up question"
-                           "Answer my follow up question using the context provided."))
-        ("assistant" . "Sure, give me the full document content")
-        ("user" . ,full)
-        ("assistant" . "What can I help you with?")
-        ("user" . ,prompt)))))
+        `((:role "system" :content ,system-prompt)
+          (:role "user" :content ,(concat "I'll provide a document in which I have highlighted a section. "
+                                          language-text
+                                          "Answer should be specific to the highlighted section but use "
+                                          "the rest of the text as context to understand the patterns and intent."))
+          (:role "assistant" :content "Sure, give me the full document content")
+          (:role "user" :content ,full)
+          (:role "assistant" :content "OK. What is the highlighted section?")
+          (:role "user" :content ,selection)
+          (:role "assistant" :content "What can I help you with?")
+          (:role "user" :content ,prompt))
+
+      `((:role "system" :content ,system-prompt)
+        (:role "user" :content ,(concat "I'll provide you with the document I'm working on and a follow up question. "
+                                        "Answer my follow up question using the context provided."))
+        (:role "assistant" :content "Sure, give me the full document content")
+        (:role "user" :content ,full)
+        (:role "assistant" :content "What can I help you with?")
+        (:role "user" :content ,prompt)))))
 
 (defun yap-template-split-buffer-context (system-prompt prompt buffer)
   "Similar to `yap-template-selection-context', but with buffer as context.
@@ -124,29 +125,30 @@ Order of messages:
          (before (yap--get-text-before buffer))
          (after (yap--get-text-after buffer)))
     (if selection
-        `(("system" . ,system-prompt)
-          ("user" . ,(concat "I'll provide a document in which I have highlighted a section. "
-                             language-text
-                             "Answer should be specific to the highlighted section but use "
-                             "the rest of the text as context to understand the patterns and intent."))
-          ("assistant" . "OK. What is the highlighted text?")
-          ("user" . ,selection)
-          ("assistant" . "What is there before the highlighted section?")
-          ("user" . ,before)
-          ("assistant" . "What is there after the highlighted section?")
-          ("user" . ,after)
-          ("assistant" . "What can I help you with?")
-          ("user" . ,prompt))
-      `(("system" . ,system-prompt)
-        ("user" . ,(concat "I'll provide you context about a document that I am working on. "
-                           "I'm somewhere within the document. Respond with just the request "
-                           "information to be filled in between."))
-        ("assistant" . "OK. What comes before your current position?")
-        ("user". ,before)
-        ("assistant" . "What comes after your current position?")
-        ("user" . ,after)
-        ("assistant" . "What can I help you with?")
-        ("user" . ,prompt)))))
+        `((:role "system" :content ,system-prompt)
+          (:role "user" :content ,(concat "I'll provide a document in which I have highlighted a section. "
+                                          language-text
+                                          "Answer should be specific to the highlighted section but use "
+                                          "the rest of the text as context to understand the patterns and intent."))
+          (:role "assistant" :content "OK. What is the highlighted text?")
+          (:role "user" :content ,selection)
+          (:role "assistant" :content "What is there before the highlighted section?")
+          (:role "user" :content ,before)
+          (:role "assistant" :content "What is there after the highlighted section?")
+          (:role "user" :content ,after)
+          (:role "assistant" :content "What can I help you with?")
+          (:role "user" :content ,prompt))
+      `((:role "system" :content ,system-prompt)
+        (:role "user" :content ,(concat "I'll provide you context about a document that I am working on. "
+                                        "I'm somewhere within the document. Respond with just the request "
+                                        "information to be filled in between."))
+        (:role "assistant" :content "OK. What comes before your current position?")
+        (:role "user" :content ,before)
+        (:role "assistant" :content "What comes after your current position?")
+        (:role "user" :content ,after)
+        (:role "assistant" :content "What can I help you with?")
+        (:role "user" :content ,prompt)))))
+
 
 (defun yap-template-prompt (prompt)
   "A simple prompt template using `PROMPT'."
@@ -172,10 +174,9 @@ Order of messages:
 (defun yap--get-selected-text (buffer)
   "Get the selected text in the specified BUFFER, if any."
   (with-current-buffer buffer
-    (if (region-active-p)
-        (let ((selection (buffer-substring (region-beginning) (region-end))))
-          selection)
-      nil)))
+    (when (region-active-p)
+      (let ((selection (buffer-substring (region-beginning) (region-end))))
+        selection))))
 
 (defun yap--get-buffer-text (buffer)
   "Get the text before the point or selection in the specified BUFFER."

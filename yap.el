@@ -82,18 +82,20 @@
 
 (defun yap--save-interaction (messages resp)
   "Save llm `MESSAGES' and `RESP' to disk."
-  (if resp
-      (when yap-log-requests
-        (mkdir yap-log-requests t)
-        ;; Save the log of the request and the response to disk
-        (let ((json-data (json-encode `(("service" . ,yap-service)
-                                        ("model" . ,yap-model)
-                                        ("messages" . ,messages)
-                                        ("response" . ,resp))))
-              (json-file (format "%s/%s.json" yap-log-requests (format-time-string "%Y%m%d-%H%M%S"))))
-          (with-temp-file json-file
-            (insert json-data))))
-    (message "[ERROR] Unable to get response %s" (yap--get-error-message resp))))
+  (when yap-log-requests
+    (mkdir yap-log-requests t)
+    ;; Save the log of the request and the response to disk
+    (let* ((messages-data (mapcar (lambda (msg)
+                                    `(("role" . ,(plist-get msg :role))
+                                      ("content" . ,(plist-get msg :content))))
+                                  messages))
+           (json-data (json-encode `(("service" . ,yap-service)
+                                     ("model" . ,yap-model)
+                                     ("messages" . ,messages-data)
+                                     ("response" . ,resp))))
+           (json-file (format "%s/%s.json" yap-log-requests (format-time-string "%Y%m%d-%H%M%S"))))
+      (with-temp-file json-file
+        (insert json-data)))))
 
 (defcustom yap-llm-provider-override nil
   "Override the LLM provider.
