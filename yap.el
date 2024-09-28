@@ -218,7 +218,8 @@ START and END are the region to replace in original buffer."
     ;; newline is because of evil-mode not playing nice
     (if (boundp 'evil-mode)
         (insert message "\n")
-      (insert message)))
+      (insert message))
+    (pulse-momentary-highlight-region start (point)))
   (with-current-buffer yap--response-buffer
     (kill-buffer)))
 
