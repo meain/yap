@@ -48,9 +48,9 @@
   "Generate shell command."
   (let ((task (read-string "Task: ")))
     (yap-template-prompt (concat "Generate a shell command to do the following task."
-                                "Only return the command to be run."
-                                "Never put it in a code block.\n"
-                                "Task:" task))))
+                                 "Only return the command to be run."
+                                 "Never put it in a code block.\n"
+                                 "Task:" task))))
 
 (defun yap-templates--explain-code-with-comments ()
   "Explain selected code."
@@ -66,6 +66,22 @@
   (yap-template-buffer-context yap--default-system-prompt-for-rewrite
                                "Optimize the provided code"
                                (current-buffer)))
+
+(defun yap-template--fix-diagnostic-error ()
+  "Fix error reported by diagnostic."
+  (yap-template-prompt
+   (concat
+    "Fix the following errors in the provided code."
+    "Give me only the full code (no additional comments or code markers).\n"
+    (string-join (when (use-region-p)
+                   (let ((start (region-beginning))
+                         (end (region-end)))
+                     (mapcar (lambda (x)
+                               (format "Error on line %s: %s"
+                                       (1+ (- (line-number-at-pos (flymake-diagnostic-beg x))
+                                              (line-number-at-pos start)))
+                                       (flymake-diagnostic-text x)))
+                             (flymake-diagnostics start end)))) "\n"))))
 
 (defun yap-templates--emojify ()
   "Emojify the selected text."
@@ -179,6 +195,7 @@ PROMPT is follow up user prompt."
     (generate-shell-command . yap-templates--generate-shell-command)
     (explain-code-with-comments . yap-templates--explain-code-with-comments)
     (optimize-code . yap-templates--optimize-code)
+    (fix-diagnostic-error . yap-template--fix-diagnostic-error)
     (emojify . yap-templates--emojify)
     (who-what . yap-templates--who-what)
     (summarize-webpage . yap-templates--summarize-webpage)
