@@ -51,6 +51,16 @@
   :type 'boolean
   :group 'yap)
 
+(defcustom yap-api-key:openai "your-openai-api-key"
+  "API key for OpenAI."
+  :type 'string
+  :group 'yap)
+
+(defcustom yap-api-key:anthropic "your-anthropic-api-key"
+  "API key for Anthropic."
+  :type 'string
+  :group 'yap)
+
 (defun yap-set-service ()
   "Set the service to use for the yap command."
   (interactive)
