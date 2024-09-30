@@ -135,7 +135,12 @@ Call PARTIAL-CALLBACK with each chunk, FINAL-CALLBACK with final response."
         (prompt (yap--llm-generate-prompt messages)))
     (yap--clean-response-buffer)
     (message "Processing request via %s and %s model..." yap-service yap-model)
-    (llm-chat-streaming llm-provider prompt partial-callback final-callback
+    (llm-chat-streaming llm-provider
+                        prompt
+                        partial-callback
+                        (lambda (resp)
+                          (yap--save-interaction messages resp)
+                          (when final-callback (funcall final-callback resp)))
                         (lambda (_ error) (message "Error processing request: %s" error)))))
 
 ;;;###autoload
@@ -170,7 +175,7 @@ The response from LLM is displayed in the *yap-response* buffer."
     (if llm-messages
         (let ((buffer (current-buffer)))
           (let ((first-chunk t))
-            (yap--do
+            (yap-do
              llm-messages
              (lambda (resp)
                (when first-chunk
@@ -179,7 +184,6 @@ The response from LLM is displayed in the *yap-response* buffer."
                (setq previous resp)
                (yap--replace-response-buffer resp))
              (lambda (resp)
-               (yap--save-interaction llm-messages resp)
                (yap--replace-response-buffer resp)))))
       (message "[ERROR] Failed to fill template"))))
 
@@ -241,7 +245,7 @@ Rewrite the buffer or selection if present with the returned response."
               (start (if (region-active-p) (region-beginning) (point-min)))
               (end (if (region-active-p) (region-end) (point-max))))
           (let ((first-chunk t))
-            (yap--do
+            (yap-do
              llm-messages
              (lambda (resp)
                (when first-chunk
@@ -251,7 +255,6 @@ Rewrite the buffer or selection if present with the returned response."
                    (funcall crrent-major-mode)))
                (yap--replace-response-buffer resp))
              (lambda (resp)
-               (yap--save-interaction llm-messages resp)
                ;; Using buffer text instead of message, this will let the user edit
                ;; the llm response and then use the edited version for rewrites.
                (if yap-rewrite-auto-accept
@@ -286,13 +289,11 @@ Kinda like `yap-rewrite', but just writes instead of replace."
     (if llm-messages
         (let ((buffer (current-buffer))
               (previous ""))
-          (yap--do llm-messages
-                   (lambda (resp)
-                     (with-current-buffer buffer
-                       (insert (string-remove-prefix previous resp))
-                       (setq previous resp)))
-                   (lambda (resp)
-                     (yap--save-interaction llm-messages resp))))
+          (yap-do llm-messages
+                  (lambda (resp)
+                    (with-current-buffer buffer
+                      (insert (string-remove-prefix previous resp))
+                      (setq previous resp)))))
       (message "[ERROR] Failed to fill template"))))
 
 (provide 'yap)
