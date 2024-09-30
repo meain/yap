@@ -83,6 +83,13 @@
                                        (flymake-diagnostic-text x)))
                              (flymake-diagnostics start end)))) "\n"))))
 
+(defun yap-template--explain-using-mermaid ()
+  "Create a mermaid chart to explain the selected text."
+  (yap-template-prompt
+           (concat
+            "Create a mermaid chart to explain "
+            (read-string "What do you want to graph? "))))
+
 (defun yap-templates--emojify ()
   "Emojify the selected text."
   (yap-template-rewrite (concat "Replace words with emojis in the given text. "
@@ -176,6 +183,7 @@ PROMPT is follow up user prompt."
     (explain-code-with-comments . yap-templates--explain-code-with-comments)
     (optimize-code . yap-templates--optimize-code)
     (fix-diagnostic-error . yap-template--fix-diagnostic-error)
+    (explain-using-mermaid . yap-template--explain-using-mermaid)
     (emojify . yap-templates--emojify)
     (who-what . yap-templates--who-what)
     (summarize-webpage . yap-templates--summarize-webpage)
