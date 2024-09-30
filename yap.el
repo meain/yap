@@ -61,6 +61,7 @@
   :type 'string
   :group 'yap)
 
+;;;###autoload
 (defun yap-set-service ()
   "Set the service to use for the yap command."
   (interactive)
@@ -70,6 +71,7 @@
          '("openai" "ollama" "anthropic")))
   (yap-set-model))
 
+;;;###autoload
 (defun yap-set-model ()
   "Fetch models and update the variable."
   (interactive)
@@ -123,7 +125,8 @@ service is specified, log an error message and return nil."
    :context (yap--system-message llm-messages)
    :interactions (yap--convert-messages-sans-system llm-messages)))
 
-(defun yap--do (messages partial-callback &optional final-callback)
+;;;###autoload
+(defun yap-do (messages partial-callback &optional final-callback)
   "Get LLM response for MESSAGES.
 Call PARTIAL-CALLBACK with each chunk, FINAL-CALLBACK with final response."
   (let ((llm-warn-on-nonfree nil) ; this is a personal choice
@@ -135,12 +138,14 @@ Call PARTIAL-CALLBACK with each chunk, FINAL-CALLBACK with final response."
     (llm-chat-streaming llm-provider prompt partial-callback final-callback
                         (lambda (_ error) (message "Error processing request: %s" error)))))
 
+;;;###autoload
 (defun yap-buffer-close ()
   "Close the response buffer."
   (interactive)
   (when (get-buffer-window yap--response-buffer)
     (delete-window (get-buffer-window yap--response-buffer))))
 
+;;;###autoload
 (defun yap-buffer-toggle ()
   "Open or close the *yap-response* buffer."
   (interactive)
@@ -151,6 +156,7 @@ Call PARTIAL-CALLBACK with each chunk, FINAL-CALLBACK with final response."
           (yap-show-response-buffer)
         (message "There is nothing in the yap response buffer")))))
 
+;;;###autoload
 (defun yap-prompt (&optional template)
   "Prompt the user with the given PROMPT using TEMPLATE if provided.
 If TEMPLATE is not provided or nil, use the default template.
@@ -220,6 +226,7 @@ START and END are the region to replace in original buffer."
   (with-current-buffer yap--response-buffer
     (kill-buffer)))
 
+;;;###autoload
 (defun yap-rewrite (&optional template)
   "Prompt the user with the given PROMPT using TEMPLATE if provided.
 Rewrite the buffer or selection if present with the returned response."
@@ -267,6 +274,7 @@ Rewrite the buffer or selection if present with the returned response."
                    (pop-to-buffer yap--response-buffer)))))))
       (message "[ERROR] Failed to fill template"))))
 
+;;;###autoload
 (defun yap-write (&optional template)
   "Prompt the user with the given PROMPT using TEMPLATE if provided.
 Kinda like `yap-rewrite', but just writes instead of replace."
