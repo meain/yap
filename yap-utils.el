@@ -94,11 +94,11 @@
   "Convert MESSAGES from (role . content) to OpenAI format, without system message."
   (seq-filter #'identity
               (seq-map (lambda (message)
-                         (let ((role (intern (plist-get message :role)))
+                         (let ((role (plist-get message :role))
                                (content (plist-get message :content)))
-                           (unless (string= role 'system)
+                           (unless (equal role 'system)
                              (make-llm-chat-prompt-interaction
-                              :role role
+                              :role (symbol-name role)
                               :content content))))
                        messages)))
 
@@ -106,7 +106,7 @@
   "Check if the given MESSAGES contain a system message."
   (when-let ((system-message
               (seq-find (lambda (message)
-                          (string= (plist-get message :role) "system"))
+                          (equal (plist-get message :role) 'system))
                         messages)))
     (plist-get system-message :content)))
 

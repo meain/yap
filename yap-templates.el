@@ -86,9 +86,9 @@
 (defun yap-template--explain-using-mermaid ()
   "Create a mermaid chart to explain the selected text."
   (yap-template-prompt
-           (concat
-            "Create a mermaid chart to explain "
-            (read-string "What do you want to graph? "))))
+   (concat
+    "Create a mermaid chart to explain "
+    (read-string "What do you want to graph? "))))
 
 (defun yap-templates--emojify ()
   "Emojify the selected text."
@@ -110,14 +110,14 @@ It first fetches the content of the webpage, uses readable cli to
 extract the main content and then summarizes it."
   (let* ((url (read-string "URL: "))
          (content (shell-command-to-string (format "readable %s" url))))
-    `((:role "system" :content ,(concat "You are Summarizer AI. You help summarize websites. I'll provide you with the content and the url."
+    `((:role system :content ,(concat "You are Summarizer AI. You help summarize websites. I'll provide you with the content and the url."
                                         "Give a 2 line summary at the top with a point by point breakdown of the article (max 10 points). "
                                         "Use markdown when necessary. Retain the relative order in which data is presented in the article. Use emojies to make it more engaging. "
                                         "No need to have headers like Article summary or point by point breakdown."))
-      (:role "assistant" :content "Give me the content to summarize.")
-      (:role "user" :content ,content)
-      (:role "assistant" :content "What is the URL? I'll only use it for additional context.")
-      (:role "user" :content ,url))))
+      (:role assistant :content "Give me the content to summarize.")
+      (:role user :content ,content)
+      (:role assistant :content "What is the URL? I'll only use it for additional context.")
+      (:role user :content ,url))))
 
 (defun yap--retrieve-awesome-chatgpt-prompts (&optional force-update)
   "Retrieve and cache prompts from awesome-chatgpt-prompts.
@@ -164,6 +164,7 @@ PROMPT is follow up user prompt."
 
 ;; TODO(meain): different set of templates for yap-prompt, yap-rewrite
 ;; and yap-do so that user won't have the whole set to pick from
+;; TODO: We can probably define post-processors for each template (use plist so that it is expandable)
 (defvar yap-templates
   '(;; Generic
     (default-prompt . yap-template-prompt--default)
