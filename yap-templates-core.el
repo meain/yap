@@ -67,6 +67,7 @@ If the buffer has a selection, then the selection is used as context."
     (if (provided-mode-derived-p major-mode 'prog-mode)
         (string-trim (string-trim (symbol-name major-mode) nil "-ts-mode") nil "-mode")
       nil)))
+
 (defun yap-template-buffer-context (system-prompt prompt buffer)
   "Similar to `yap-template-selection-context', but with buffer as context.
 `SYSTEM-PROMPT', `PROMPT' and `BUFFER' serve the same purpose as the
@@ -165,6 +166,14 @@ Order of messages:
 (defun yap-template-rewrite-buffer-context (prompt)
   "A template for `yap-rewrite' using `PROMPT' and buffer contents as context."
   (yap-template-buffer-context yap--default-system-prompt-for-rewrite prompt (current-buffer)))
+
+(defun yap-template-prompt-split-buffer-context (prompt)
+  "A template for `yap-prompt' using `PROMPT' and split-buffer contents as context."
+  (yap-template-split-buffer-context yap--default-system-prompt-for-prompt prompt (current-buffer)))
+
+(defun yap-template-rewrite-split-buffer-context (prompt)
+  "A template for `yap-rewrite' using `PROMPT' and split-buffer contents as context."
+  (yap-template-split-buffer-context yap--default-system-prompt-for-rewrite prompt (current-buffer)))
 
 (defun yap-with-prompt (func)
   "Wrap a `FUNC' with a prompt."

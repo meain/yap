@@ -98,7 +98,7 @@
                                (content (plist-get message :content)))
                            (unless (equal role 'system)
                              (make-llm-chat-prompt-interaction
-                              :role (symbol-name role)
+                              :role role
                               :content content))))
                        messages)))
 
