@@ -285,14 +285,22 @@ Kinda like `yap-rewrite', but just writes instead of replace."
   (let* ((template (if (equal template '(4)) ; Check if C-u (universal argument) is provided
                        (intern (completing-read "Template: " (mapcar 'car yap-templates) nil t))
                      (or template 'default-rewrite))) ; Otherwise, use default template if not provided
-         (llm-messages (yap--get-filled-template template)))
+         (llm-messages (yap--get-filled-template template))
+         (last-point (point)))
     (if llm-messages
         (let ((buffer (current-buffer))
               (previous ""))
           (yap-do llm-messages
                   (lambda (resp)
                     (with-current-buffer buffer
+                      ;; Ideally it should have worked without having
+                      ;; us having to manually move around the point,
+                      ;; but somehow it does not seem to work. This
+                      ;; hack forces it to use the correct point when
+                      ;; inserting new text.
+                      (goto-char last-point)
                       (insert (string-remove-prefix previous resp))
+                      (setq last-point (point))
                       (setq previous resp)))))
       (message "[ERROR] Failed to fill template"))))
 
