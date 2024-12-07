@@ -184,5 +184,16 @@ manage it unfortunately."
   (let ((yap-llm-base-url:openai yap-llm-base-url:ollama))
     (yap--get-models:openai)))
 
+(defcustom yap-llm-base-url:groq "https://api.groq.com/openai/v1"
+  "The base URL for Groq."
+  :type 'string
+  :group 'yap)
+
+(defun yap--get-models:groq ()
+  "Get the models for Groq."
+  (let ((yap-llm-base-url:openai yap-llm-base-url:groq)
+        (yap-api-key:openai yap-api-key:groq))
+    (yap--get-models:openai)))
+
 (provide 'yap-utils)
 ;;; yap-utils.el ends here

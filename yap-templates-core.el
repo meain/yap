@@ -31,7 +31,8 @@
 (defconst yap--default-system-prompt-for-rewrite
   (concat "You are a helpful assistant who helps rewrite/refactor code and prose. "
           "Do not ask or suggest follow up questions. "
-          "For code responses, ONLY provide the raw code without additional text or markers above or below."
+          "For code responses, ONLY provide the code without any extra explanation."
+          "Keep the useful comments in the code."
           "NEVER put code block in ``` in the response. "
           "ALWAYS provide the full code to be rewritten and not just the new changes if asked to do code refactor.")
   "The system prompt to use for the `yap-rewrite' command.")
