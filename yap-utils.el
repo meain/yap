@@ -13,13 +13,6 @@
   (with-current-buffer (get-buffer-create yap--response-buffer)
     (erase-buffer)))
 
-(defun yap--insert-chunk-to-response-buffer (chunk)
-  "Insert CHUNK to the response buffer."
-  (with-current-buffer (get-buffer-create yap--response-buffer)
-    (save-excursion
-      (goto-char (point-max))
-      (insert chunk))))
-
 (defcustom yap-follow-output nil
   "Whether to follow the output buffer or not."
   :type 'boolean
@@ -43,6 +36,7 @@
   "Show the yap response buffer."
   (interactive)
   (with-current-buffer (get-buffer-create yap--response-buffer)
+    (visual-line-mode t)
     (if (fboundp 'markdown-mode) (markdown-mode)))
   (display-buffer (get-buffer-create yap--response-buffer)))
 
