@@ -66,6 +66,11 @@
   :type 'string
   :group 'yap)
 
+(defcustom yap-api-key:openrouter "your-openrouter-api-key"
+  "API key for Openrouter."
+  :type 'string
+  :group 'yap)
+
 ;;;###autoload
 (defun yap-set-service ()
   "Set the service to use for the yap command."
@@ -73,7 +78,7 @@
   (setq yap-service
         (completing-read
          "Service: "
-         '("openai" "ollama" "anthropic" "groq")))
+         '("openai" "ollama" "anthropic" "groq" "openrouter")))
   (yap-set-model))
 
 ;;;###autoload
@@ -84,6 +89,7 @@
                       ("openai" (yap--get-models:openai))
                       ("ollama" (yap--get-models:ollama))
                       ("groq" (yap--get-models:groq))
+                      ("openrouter" (yap--get-models:openrouter))
                       ("anthropic" (yap--get-models:anthropic))))
             (model-name (completing-read "Model: " models)))
       (setq yap-model model-name)))
@@ -122,6 +128,7 @@ service is specified, log an error message and return nil."
     (pcase yap-service
       ("openai" (make-llm-openai :key yap-api-key:openai :chat-model yap-model))
       ("groq" (make-llm-openai-compatible :key yap-api-key:groq :chat-model yap-model :url yap-llm-base-url:groq))
+      ("openrouter" (make-llm-openai-compatible :key yap-api-key:openrouter :chat-model yap-model :url yap-llm-base-url:openrouter))
       ("anthropic" (make-llm-claude :key yap-api-key:anthropic :chat-model yap-model))
       (_ (message "[ERROR] Unsupported service: %s" yap-service) nil))))
 

@@ -189,5 +189,16 @@ manage it unfortunately."
         (yap-api-key:openai yap-api-key:groq))
     (yap--get-models:openai)))
 
+(defcustom yap-llm-base-url:openrouter "https://openrouter.ai/api/v1"
+  "The base URL for Openrouter."
+  :type 'string
+  :group 'yap)
+
+(defun yap--get-models:openrouter ()
+  "Get the models for Openrouter."
+  (let ((yap-llm-base-url:openai yap-llm-base-url:openrouter)
+        (yap-api-key:openai yap-api-key:openrouter))
+    (yap--get-models:openai)))
+
 (provide 'yap-utils)
 ;;; yap-utils.el ends here
