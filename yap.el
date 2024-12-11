@@ -23,6 +23,7 @@
 (require 'llm-openai)
 (require 'llm-ollama)
 (require 'llm-claude)
+(require 'inline-diff)
 
 (require 'yap-templates)
 (require 'yap-utils)
@@ -206,6 +207,11 @@ The response from LLM is displayed in the *yap-response* buffer."
     (kill-buffer)
     (message "Canceled rewrite")))
 
+(defun yap-rewrite-delete-diff-buffer ()
+  "Delete the diff buffer."
+  (when (get-buffer "*yap-rewrite-diff*")
+    (kill-buffer "*yap-rewrite-diff*")))
+
 (defun yap-rewrite-show-diff (buffer start end message)
   "Show the diff between the BUFFER and the rewritten MESSAGE.
 START and END are the region to replace in original buffer."
@@ -224,8 +230,8 @@ START and END are the region to replace in original buffer."
                 (call-process "diff" nil t nil "-u" temp-original temp-rewritten)
                 (buffer-string)))
       (diff-mode)
-      (pop-to-buffer (current-buffer))
       (read-only-mode)
+      (pop-to-buffer (current-buffer))
       (delete-file temp-original)
       (delete-file temp-rewritten))))
 
@@ -277,15 +283,32 @@ Rewrite the buffer or selection if present with the returned response."
                      (setq header-line-format
                            (concat
                             "C-c C-c: Accept rewrite | "
+                            "C-c C-a: Inline diff | "
                             "C-c C-d: View diff | "
                             "C-c C-k: Cancel"))
                      (local-set-key (kbd "C-c C-k")
-                                    (lambda () (interactive) (yap-rewrite-cancel)))
+                                    (lambda ()
+                                      (interactive)
+                                      (yap-rewrite-delete-diff-buffer)
+                                      (yap-rewrite-cancel)
+                                      (pop-to-buffer buffer)))
                      (local-set-key (kbd "C-c C-c")
                                     (lambda () (interactive)
-                                      (yap-rewrite-accept buffer start end (buffer-string))))
+                                      (yap-rewrite-delete-diff-buffer)
+                                      (yap-rewrite-accept buffer start end (buffer-string))
+                                      (pop-to-buffer buffer)))
+                     (local-set-key (kbd "C-c C-a")
+                                    (lambda () (interactive)
+                                      (yap-rewrite-delete-diff-buffer)
+                                      (let ((data (buffer-substring-no-properties (point-min) (point-max))))
+                                        (with-current-buffer buffer
+                                          (inline-diff-words start end data))
+                                        (pop-to-buffer buffer))))
                      (local-set-key (kbd "C-c C-d")
-                                    (lambda () (interactive) (yap-rewrite-show-diff buffer start end (buffer-string)))))
+                                    (lambda ()
+                                      (interactive)
+                                      (yap-rewrite-show-diff buffer start end (buffer-string))
+                                      (pop-to-buffer yap--response-buffer))))
                    (yap--replace-response-buffer resp)
                    (pop-to-buffer yap--response-buffer)))))))
       (message "[ERROR] Failed to fill template"))))
