@@ -238,15 +238,27 @@ START and END are the region to replace in original buffer."
   "Accept the rewrite and replace the region in the BUFFER with MESSAGE.
 START and END are the region to replace in original buffer."
   (with-current-buffer buffer
-    (delete-region start end)
-    (goto-char start)
-    ;; newline is because of evil-mode not playing nice
-    (if (boundp 'evil-mode)
-        (insert message "\n")
-      (insert message))
-    (pulse-momentary-highlight-region start (point)))
-  (with-current-buffer yap--response-buffer
-    (kill-buffer)))
+    (let ((newline (if (boundp 'evil-mode) "\n" "")))
+      (delete-region start end)
+      (goto-char start)
+      (insert message newline)
+      (pulse-momentary-highlight-region start (point))))
+  (kill-buffer yap--response-buffer))
+
+(defun yap-rewrite-conflict (buffer start end message)
+  "Accept the rewrite and replace the region in the BUFFER with MESSAGE.
+START and END are the region to replace in original buffer."
+  (with-current-buffer buffer
+    (let ((existing (buffer-substring-no-properties start end)))
+      (delete-region start end)
+      (goto-char start)
+      (insert (format "<<<<<<< Original\n%s=======\n%s\n>>>>>>> LLM response" existing message))
+      (when (boundp 'evil-mode)
+        (insert "\n"))
+      (pulse-momentary-highlight-region start (point)))
+    (smerge-mode)
+    (smerge-refine))
+  (kill-buffer yap--response-buffer))
 
 ;;;###autoload
 (defun yap-rewrite (&optional template)
@@ -282,6 +294,7 @@ Rewrite the buffer or selection if present with the returned response."
                      (setq header-line-format
                            (concat
                             "C-c C-c: Accept rewrite | "
+                            "C-c C-a: Apply diff |"
                             "C-c C-d: View diff | "
                             "C-c C-k: Cancel"))
                      (local-set-key (kbd "C-c C-k")
@@ -294,6 +307,11 @@ Rewrite the buffer or selection if present with the returned response."
                                     (lambda () (interactive)
                                       (yap-rewrite-delete-diff-buffer)
                                       (yap-rewrite-accept buffer start end (buffer-string))
+                                      (pop-to-buffer buffer)))
+                     (local-set-key (kbd "C-c C-a")
+                                    (lambda () (interactive)
+                                      (yap-rewrite-delete-diff-buffer)
+                                      (yap-rewrite-conflict buffer start end (buffer-string))
                                       (pop-to-buffer buffer)))
                      (local-set-key (kbd "C-c C-d")
                                     (lambda ()
