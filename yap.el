@@ -23,7 +23,6 @@
 (require 'llm-openai)
 (require 'llm-ollama)
 (require 'llm-claude)
-(require 'inline-diff)
 
 (require 'yap-templates)
 (require 'yap-utils)
@@ -283,7 +282,6 @@ Rewrite the buffer or selection if present with the returned response."
                      (setq header-line-format
                            (concat
                             "C-c C-c: Accept rewrite | "
-                            "C-c C-a: Inline diff | "
                             "C-c C-d: View diff | "
                             "C-c C-k: Cancel"))
                      (local-set-key (kbd "C-c C-k")
@@ -297,13 +295,6 @@ Rewrite the buffer or selection if present with the returned response."
                                       (yap-rewrite-delete-diff-buffer)
                                       (yap-rewrite-accept buffer start end (buffer-string))
                                       (pop-to-buffer buffer)))
-                     (local-set-key (kbd "C-c C-a")
-                                    (lambda () (interactive)
-                                      (yap-rewrite-delete-diff-buffer)
-                                      (let ((data (buffer-substring-no-properties (point-min) (point-max))))
-                                        (with-current-buffer buffer
-                                          (inline-diff-words start end data))
-                                        (pop-to-buffer buffer))))
                      (local-set-key (kbd "C-c C-d")
                                     (lambda ()
                                       (interactive)
