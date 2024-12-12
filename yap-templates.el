@@ -63,6 +63,10 @@
 
 (defun yap-templates--optimize-code ()
   "Optimize selected code."
+  (yap-template-rewrite "Optimize the provided code"))
+
+(defun yap-templates--optimize-code-with-buffer-context ()
+  "Optimize selected code but pass in full buffer context."
   (yap-template-buffer-context yap--default-system-prompt-for-rewrite
                                "Optimize the provided code"
                                (current-buffer)))
@@ -187,6 +191,7 @@ PROMPT is follow up user prompt."
     (generate-shell-command . yap-templates--generate-shell-command)
     (explain-code-with-comments . yap-templates--explain-code-with-comments)
     (optimize-code . yap-templates--optimize-code)
+    (optimize-code-buffer-context . yap-templates--optimize-code-with-buffer-context)
     (fix-diagnostic-error . yap-template--fix-diagnostic-error)
     (explain-using-mermaid . yap-template--explain-using-mermaid)
     (fix-writing . yap-templates--fix-writing)
