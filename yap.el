@@ -249,16 +249,24 @@ START and END are the region to replace in original buffer."
   "Accept the rewrite and replace the region in the BUFFER with MESSAGE.
 START and END are the region to replace in original buffer."
   (with-current-buffer buffer
-    (let ((existing (buffer-substring-no-properties start end)))
+    (let* ((existing (buffer-substring-no-properties start end))
+           (file-name (buffer-file-name buffer))
+           (file-extension (file-name-extension file-name))
+           (original-temp-file (make-temp-file "yap-rewrite-tmp-" nil (concat "." file-extension)))
+           (new-temp-file (make-temp-file "yap-rewrite-tmp-" nil (concat "." file-extension)))
+           (empty-temp-file (make-temp-file "yap-rewrite-tmp-" nil (concat "." file-extension)))
+           (command (format "git merge-file --no-diff3 -L Original -L Empty -L 'LLM Response' -p %s %s %s"
+                            original-temp-file empty-temp-file new-temp-file)))
+      (with-temp-file original-temp-file (insert existing))
+      (with-temp-file new-temp-file (insert message))
+      (with-temp-file empty-temp-file (insert ""))
       (delete-region start end)
       (goto-char start)
-      (insert (format "<<<<<<< Original\n%s=======\n%s\n>>>>>>> LLM response" existing message))
-      (when (boundp 'evil-mode)
-        (insert "\n"))
-      (pulse-momentary-highlight-region start (point)))
-    (smerge-mode)
-    (smerge-refine))
-  (kill-buffer yap--response-buffer))
+      (insert (shell-command-to-string command))
+      (pulse-momentary-highlight-region start (point))
+      (smerge-mode)
+      (mapc 'delete-file (list original-temp-file new-temp-file empty-temp-file))))
+  (yap-buffer-close))
 
 ;;;###autoload
 (defun yap-rewrite (&optional template)
