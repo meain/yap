@@ -34,3 +34,26 @@
 (setq yap-llm-base-url:ollama "https://my-hosted-ollama/v1")
 ```
 
+## Loading context from external sources
+
+For example, if you want to load the context from an external source
+like [meain/refer](https://github.com/meain/refer), you can do
+something like this:
+
+``` emacs-lisp
+(defun meain/yap-template-rewrite-with-refer ()
+(yap-template-external-context
+    yap--default-system-prompt-for-rewrite
+    (read-string "Prompt: ")
+    (current-buffer)
+    (shell-command-to-string (concat "refer search --format llm '" (read-string "Query for refer: ") "'"))))
+(add-to-list 'yap-templates '(yap-rewrite-with-refer . meain/yap-template-rewrite-with-refer))
+
+(defun meain/yap-template-prompt-with-refer ()
+(yap-template-external-context
+    yap--default-system-prompt-for-prompt
+    (read-string "Prompt: ")
+    (current-buffer)
+    (shell-command-to-string (concat "refer search --format llm '" (read-string "Query for refer: ") "'"))))
+(add-to-list 'yap-templates '(yap-prompt-with-refer . meain/yap-template-prompt-with-refer))
+```
