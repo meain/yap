@@ -41,19 +41,15 @@ like [meain/refer](https://github.com/meain/refer), you can do
 something like this:
 
 ``` emacs-lisp
-(defun meain/yap-template-rewrite-with-refer ()
-(yap-template-external-context
-    yap--default-system-prompt-for-rewrite
-    (read-string "Prompt: ")
+(defun meain/yap-template-with-refer (prompt-type)
+(let ((prompt (read-string "Prompt: ")))
+    (yap-template-external-context
+    (if (eq prompt-type 'rewrite)
+        yap--default-system-prompt-for-rewrite
+        yap--default-system-prompt-for-prompt)
+    prompt
     (current-buffer)
-    (shell-command-to-string (concat "refer search --format llm '" (read-string "Query for refer: ") "'"))))
-(add-to-list 'yap-templates '(yap-rewrite-with-refer . meain/yap-template-rewrite-with-refer))
-
-(defun meain/yap-template-prompt-with-refer ()
-(yap-template-external-context
-    yap--default-system-prompt-for-prompt
-    (read-string "Prompt: ")
-    (current-buffer)
-    (shell-command-to-string (concat "refer search --format llm '" (read-string "Query for refer: ") "'"))))
-(add-to-list 'yap-templates '(yap-prompt-with-refer . meain/yap-template-prompt-with-refer))
+    (shell-command-to-string (concat "refer search --format llm '" prompt "'")))))
+(add-to-list 'yap-templates '(yap-rewrite-with-refer . (lambda () (meain/yap-template-with-refer 'rewrite))))
+(add-to-list 'yap-templates '(yap-prompt-with-refer . (lambda () (meain/yap-template-with-refer 'prompt))))
 ```
