@@ -151,6 +151,32 @@ Order of messages:
         (:role assistant :content "What can I help you with?")
         (:role user :content ,prompt)))))
 
+(defun yap-template-external-context (system-prompt prompt buffer context)
+  "Similar to `yap-template-buffer-context', but with context as an argument.
+`SYSTEM-PROMPT', `PROMPT', `BUFFER', and `CONTEXT' serve the purpose as the
+name suggests."
+  (let* ((selection (yap--get-selected-text buffer))
+         (language (yap--get-buffer-language buffer))
+         (language-text (if language (concat "The code is in " language ". "))))
+    (if selection
+        `((:role system :content ,system-prompt)
+          (:role user :content ,(concat "I'll provide context and a highlighted section. "
+                                        language-text
+                                        "Answer should be specific to the highlighted section but use "
+                                        "the context to understand the patterns and intent."))
+          (:role assistant :content "Sure, give me the context")
+          (:role user :content ,context)
+          (:role assistant :content "OK. What is the highlighted section?")
+          (:role user :content ,selection)
+          (:role assistant :content "What can I help you with?")
+          (:role user :content ,prompt))
+      `((:role system :content ,system-prompt)
+        (:role user :content ,(concat "I'll provide you with context and a follow up question. "
+                                      "Answer my follow up question using the context provided."))
+        (:role assistant :content "Sure, give me the context")
+        (:role user :content ,context)
+        (:role assistant :content "What can I help you with?")
+        (:role user :content ,prompt)))))
 
 (defun yap-template-prompt (prompt)
   "A simple prompt template using `PROMPT'."

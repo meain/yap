@@ -36,6 +36,39 @@
   "A default template for `yap-rewrite' with split-buffer context."
   (yap-with-prompt #'yap-template-rewrite-split-buffer-context))
 
+(defun yap-template--external-context (system-message)
+  "A default template for `yap-prompt' with external context.
+SYSTEM-MESSAGE is the system message to be used."
+  (let* ((files-and-buffers (yap--select-multiple-files-and-buffers t t))
+         (prompt (read-string "Prompt: "))
+         (files (plist-get files-and-buffers :files))
+         (buffers (plist-get files-and-buffers :buffers))
+         (files-context (mapcar (lambda (file)
+                                  (format "File: %s\nContent:\n%s"
+                                          file
+                                          (with-temp-buffer
+                                            (insert-file-contents file)
+                                            (buffer-string))))
+                                files))
+         (buffers-context (mapcar (lambda (buffer)
+                                    (format "File: %s\nContent:\n%s"
+                                            buffer
+                                            (with-current-buffer buffer
+                                              (buffer-string))))
+                                  buffers))
+         (context (string-join
+                   (append files-context buffers-context)
+                   "\n----------------------------------------------------------\n\n")))
+    (yap-template-external-context system-message prompt (current-buffer) context)))
+
+(defun yap-template-prompt--external-context ()
+  "A default template for `yap-prompt' with external context."
+  (yap-template--external-context yap--default-system-prompt-for-prompt))
+
+(defun yap-template-rewrite--external-context ()
+  "A default template for `yap-rewrite' with external context."
+  (yap-template--external-context yap--default-system-prompt-for-rewrite))
+
 (defun yap-temlpates--summarize ()
   "Summarize the selected text."
   (yap-template-prompt "Summarize the given text. Use bullet points for key ideas."))
@@ -119,9 +152,9 @@ extract the main content and then summarizes it."
   (let* ((url (read-string "URL: "))
          (content (shell-command-to-string (format "readable %s" url))))
     `((:role system :content ,(concat "You are Summarizer AI. You help summarize websites. I'll provide you with the content and the url."
-                                        "Give a 2 line summary at the top with a point by point breakdown of the article (max 10 points). "
-                                        "Use markdown when necessary. Retain the relative order in which data is presented in the article. Use emojies to make it more engaging. "
-                                        "No need to have headers like Article summary or point by point breakdown."))
+                                      "Give a 2 line summary at the top with a point by point breakdown of the article (max 10 points). "
+                                      "Use markdown when necessary. Retain the relative order in which data is presented in the article. Use emojies to make it more engaging. "
+                                      "No need to have headers like Article summary or point by point breakdown."))
       (:role assistant :content "Give me the content to summarize.")
       (:role user :content ,content)
       (:role assistant :content "What is the URL? I'll only use it for additional context.")
@@ -181,6 +214,9 @@ PROMPT is follow up user prompt."
     (default-rewrite-buffer-context . yap-template-rewrite-buffer-context--default)
     (default-prompt-split-buffer-context . yap-template-prompt-split-buffer-context--default)
     (default-rewrite-split-buffer-context . yap-template-rewrite-split-buffer-context--default)
+
+    (prompt-with-external-context . yap-template-prompt--external-context)
+    (rewrite-with-external-context . yap-template-rewrite--external-context)
 
     ;; Community
     (community:awesome-chatgpt-prompts .  yap-templates--awesome-chatgpt-prompts)

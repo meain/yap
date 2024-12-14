@@ -200,5 +200,57 @@ manage it unfortunately."
         (yap-api-key:openai yap-api-key:openrouter))
     (yap--get-models:openai)))
 
+(defun yap--select-multiple-files-and-buffers (show-files show-buffers)
+  "Select multiple files and buffers within the current project.
+
+Show only files if SHOW-FILES is non-nil, show only buffers if
+SHOW-BUFFERS is non-nil.  Returns a plist with :files and :buffers
+keys."
+  (let* ((project-root (when (fboundp 'project-root)
+                         (project-root (project-current))))
+         (project-files (when project-root
+                          (mapcar (lambda (f) (file-relative-name f project-root))
+                                  (project-files (project-current)))))
+         (buffer-names (mapcar #'buffer-name (buffer-list)))
+         (all-candidates
+          (cond
+           ((and show-files show-buffers)
+            (append
+             (mapcar (lambda (f) (format "f:%s" f)) project-files)
+             (mapcar (lambda (b) (format "b:%s" b)) buffer-names)))
+           (show-files project-files)
+           (show-buffers buffer-names)
+           (t (error "At least one of show-files or show-buffers must be non-nil"))))
+         (selected-items
+          (completing-read-multiple
+           (cond
+            ((and show-files show-buffers) "Select files/buffers: ")
+            (show-files "Select files: ")
+            (show-buffers "Select buffers: "))
+           all-candidates
+           nil t nil 'my/select-multiple-files-and-buffers-history)))
+
+    (list
+     :files (if show-files
+                (if (and show-files show-buffers)
+                    (mapcar (lambda (f)
+                              (expand-file-name (substring f 2) project-root))
+                            (seq-filter (lambda (item)
+                                          (string-prefix-p "f:" item))
+                                        selected-items))
+                  (mapcar (lambda (f)
+                            (expand-file-name f project-root))
+                          selected-items))
+              nil)
+     :buffers (if show-buffers
+                  (if (and show-files show-buffers)
+                      (mapcar (lambda (b)
+                                (substring b 2))
+                              (seq-filter (lambda (item)
+                                            (string-prefix-p "b:" item))
+                                          selected-items))
+                    selected-items)
+                nil))))
+
 (provide 'yap-utils)
 ;;; yap-utils.el ends here
