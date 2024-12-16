@@ -34,7 +34,7 @@
           "For code responses, ONLY provide the code without any extra explanation."
           "Keep the useful comments in the code."
           "NEVER put code block in ``` in the response. "
-          "ALWAYS provide the full code to be rewritten and not just the new changes if asked to do code refactor.")
+          "ALWAYS provide the full code to be rewritten and not just the new changes.")
   "The system prompt to use for the `yap-rewrite' command.")
 
 (defun yap--create-messages (system-prompt user-prompt &optional context)
@@ -72,16 +72,7 @@ If the buffer has a selection, then the selection is used as context."
 (defun yap-template-buffer-context (system-prompt prompt buffer)
   "Similar to `yap-template-selection-context', but with buffer as context.
 `SYSTEM-PROMPT', `PROMPT' and `BUFFER' serve the same purpose as the
-name suggest.
-
-Order of messages:
-- system-prompt
-- assistant: give me full content
-- user: full content
-- assistant: now selection
-- user: selection
-- assistant: what can I help you with?
-- user: {{{prompt}}}"
+name suggest."
   (let* ((selection (yap--get-selected-text buffer))
          (language (yap--get-buffer-language buffer))
          (language-text (if language (concat "The code is in " language ". ")))
@@ -104,50 +95,6 @@ Order of messages:
                                         "Answer my follow up question using the context provided."))
         (:role assistant :content "Sure, give me the full document content")
         (:role user :content ,full)
-        (:role assistant :content "What can I help you with?")
-        (:role user :content ,prompt)))))
-
-(defun yap-template-split-buffer-context (system-prompt prompt buffer)
-  "Similar to `yap-template-selection-context', but with buffer as context.
-`SYSTEM-PROMPT', `PROMPT' and `BUFFER' serve the same purpose as the
-name suggest.
-
-Order of messages:
-- system-prompt
-- user: content before cursor (if selection, then before selection)
-- assistant: ok
-- user: content after cursor (or selection)
-- assistant: ok
-- user(if selection): the selected text
-- assistant: what can I help with?
-- user: {{{prompt}}}"
-  (let* ((selection (yap--get-selected-text buffer))
-         (language (yap--get-buffer-language buffer))
-         (language-text (if language (concat "The code is in " language ". ")))
-         (before (yap--get-text-before buffer))
-         (after (yap--get-text-after buffer)))
-    (if selection
-        `((:role system :content ,system-prompt)
-          (:role user :content ,(concat "I'll provide a document in which I have highlighted a section. "
-                                          language-text
-                                          "Answer should be specific to the highlighted section but use "
-                                          "the rest of the text as context to understand the patterns and intent."))
-          (:role assistant :content "OK. What is the highlighted text?")
-          (:role user :content ,selection)
-          (:role assistant :content "What is there before the highlighted section?")
-          (:role user :content ,before)
-          (:role assistant :content "What is there after the highlighted section?")
-          (:role user :content ,after)
-          (:role assistant :content "What can I help you with?")
-          (:role user :content ,prompt))
-      `((:role system :content ,system-prompt)
-        (:role user :content ,(concat "I'll provide you context about a document that I am working on. "
-                                        "I'm somewhere within the document. Respond with just the request "
-                                        "information to be filled in between."))
-        (:role assistant :content "OK. What comes before your current position?")
-        (:role user :content ,before)
-        (:role assistant :content "What comes after your current position?")
-        (:role user :content ,after)
         (:role assistant :content "What can I help you with?")
         (:role user :content ,prompt)))))
 
@@ -193,14 +140,6 @@ name suggests."
 (defun yap-template-rewrite-buffer-context (prompt)
   "A template for `yap-rewrite' using `PROMPT' and buffer contents as context."
   (yap-template-buffer-context yap--default-system-prompt-for-rewrite prompt (current-buffer)))
-
-(defun yap-template-prompt-split-buffer-context (prompt)
-  "A template for `yap-prompt' using `PROMPT' and split-buffer contents as context."
-  (yap-template-split-buffer-context yap--default-system-prompt-for-prompt prompt (current-buffer)))
-
-(defun yap-template-rewrite-split-buffer-context (prompt)
-  "A template for `yap-rewrite' using `PROMPT' and split-buffer contents as context."
-  (yap-template-split-buffer-context yap--default-system-prompt-for-rewrite prompt (current-buffer)))
 
 (defun yap-with-prompt (func)
   "Wrap a `FUNC' with a prompt."
