@@ -71,6 +71,11 @@
   :type 'string
   :group 'yap)
 
+(defcustom yap-api-key:github "your-github-api-key"
+  "API key for Github."
+  :type 'string
+  :group 'yap)
+
 ;;;###autoload
 (defun yap-set-service ()
   "Set the service to use for the yap command."
@@ -78,7 +83,7 @@
   (setq yap-service
         (completing-read
          "Service: "
-         '("openai" "ollama" "anthropic" "groq" "openrouter")))
+         '("openai" "ollama" "anthropic" "groq" "openrouter" "github")))
   (yap-set-model))
 
 ;;;###autoload
@@ -90,6 +95,7 @@
                       ("ollama" (yap--get-models:ollama))
                       ("groq" (yap--get-models:groq))
                       ("openrouter" (yap--get-models:openrouter))
+                      ("github" (yap--get-models:github))
                       ("anthropic" (yap--get-models:anthropic))))
             (model-name (completing-read "Model: " models)))
       (setq yap-model model-name)))
@@ -129,6 +135,7 @@ service is specified, log an error message and return nil."
       ("openai" (make-llm-openai :key yap-api-key:openai :chat-model yap-model))
       ("groq" (make-llm-openai-compatible :key yap-api-key:groq :chat-model yap-model :url yap-llm-base-url:groq))
       ("openrouter" (make-llm-openai-compatible :key yap-api-key:openrouter :chat-model yap-model :url yap-llm-base-url:openrouter))
+      ("github" (make-llm-openai-compatible :key yap-api-key:github :chat-model yap-model :url yap-llm-base-url:github))
       ("anthropic" (make-llm-claude :key yap-api-key:anthropic :chat-model yap-model))
       (_ (message "[ERROR] Unsupported service: %s" yap-service) nil))))
 

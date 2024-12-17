@@ -200,6 +200,31 @@ manage it unfortunately."
         (yap-api-key:openai yap-api-key:openrouter))
     (yap--get-models:openai)))
 
+(defcustom yap-llm-base-url:github "https://models.inference.ai.azure.com"
+  "The base URL for Github."
+  :type 'string
+  :group 'yap)
+
+;; https://github.com/marketplace/models/catalog
+(defcustom yap--github-models
+  '("gpt-4o-mini"
+    "gpt-4o"
+    "o1-mini"
+    "o1-preview"
+    "Phi-3.5-MoE-instruct"
+    "Phi-3.5-vision-instruct"
+    "Cohere-command-r"
+    "Mistral-large-2407")
+  "List of Github models available for use."
+  :type '(repeat string)
+  :group 'yap)
+
+(defun yap--get-models:github ()
+  "Return list of GH models.
+Github models does not publish allow getting model via API endpoint
+and so we have to manually manage it unfortunately."
+  yap--github-models)
+
 (defun yap--select-multiple-files-and-buffers (show-files show-buffers)
   "Select multiple files and buffers within the current project.
 
