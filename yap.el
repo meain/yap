@@ -275,6 +275,44 @@ START and END are the region to replace in original buffer."
       (mapc 'delete-file (list original-temp-file new-temp-file empty-temp-file))))
   (yap-buffer-close))
 
+(define-minor-mode yap-rewrite-response-mode
+  "Minor mode for handling responses from yap-rewrite."
+  :lighter " YAP-Response"
+  :keymap (let ((map (make-sparse-keymap)))
+            (define-key map (kbd "C-c C-k") (lambda () (interactive) (message "yap-rewrite-setup-keys not yet run")))
+            (define-key map (kbd "C-c C-c") (lambda () (interactive) (message "yap-rewrite-setup-keys not yet run")))
+            (define-key map (kbd "C-c C-a") (lambda () (interactive) (message "yap-rewrite-setup-keys not yet run")))
+            (define-key map (kbd "C-c C-d") (lambda () (interactive) (message "yap-rewrite-setup-keys not yet run")))
+            map))
+
+(defun yap-rewrite-setup-keys (buffer start end)
+  "Setup key bindings for rewriting response.
+BUFFER is the buffer to switch back to after executing a command.
+START is the starting position of the text to be rewritten.
+END is the ending position of the text to be rewritten."
+  (let ((keymap yap-rewrite-response-mode-map))
+    (define-key keymap (kbd "C-c C-k")
+                (lambda ()
+                  (interactive)
+                  (yap-rewrite-delete-diff-buffer)
+                  (yap-rewrite-cancel)
+                  (pop-to-buffer buffer)))
+    (define-key keymap (kbd "C-c C-c")
+                (lambda () (interactive)
+                  (yap-rewrite-delete-diff-buffer)
+                  (yap-rewrite-accept buffer start end (buffer-string))
+                  (pop-to-buffer buffer)))
+    (define-key keymap (kbd "C-c C-a")
+                (lambda () (interactive)
+                  (yap-rewrite-delete-diff-buffer)
+                  (yap-rewrite-conflict buffer start end (buffer-string))
+                  (pop-to-buffer buffer)))
+    (define-key keymap (kbd "C-c C-d")
+                (lambda ()
+                  (interactive)
+                  (yap-rewrite-show-diff buffer start end (buffer-string))
+                  (pop-to-buffer yap--response-buffer)))))
+
 ;;;###autoload
 (defun yap-rewrite (&optional template)
   "Prompt the user with the given PROMPT using TEMPLATE if provided.
@@ -297,7 +335,8 @@ Rewrite the buffer or selection if present with the returned response."
                  (setq first-chunk nil)
                  (yap-show-response-buffer)
                  (with-current-buffer (get-buffer-create yap--response-buffer)
-                   (funcall crrent-major-mode)))
+                   (funcall crrent-major-mode)
+                   (yap-rewrite-response-mode 1))) ; Enable the minor mode
                (yap--replace-response-buffer resp))
              (lambda (resp)
                ;; Using buffer text instead of message, this will let the user edit
@@ -312,27 +351,7 @@ Rewrite the buffer or selection if present with the returned response."
                             "C-c C-a: Apply diff |"
                             "C-c C-d: View diff | "
                             "C-c C-k: Cancel"))
-                     (local-set-key (kbd "C-c C-k")
-                                    (lambda ()
-                                      (interactive)
-                                      (yap-rewrite-delete-diff-buffer)
-                                      (yap-rewrite-cancel)
-                                      (pop-to-buffer buffer)))
-                     (local-set-key (kbd "C-c C-c")
-                                    (lambda () (interactive)
-                                      (yap-rewrite-delete-diff-buffer)
-                                      (yap-rewrite-accept buffer start end (buffer-string))
-                                      (pop-to-buffer buffer)))
-                     (local-set-key (kbd "C-c C-a")
-                                    (lambda () (interactive)
-                                      (yap-rewrite-delete-diff-buffer)
-                                      (yap-rewrite-conflict buffer start end (buffer-string))
-                                      (pop-to-buffer buffer)))
-                     (local-set-key (kbd "C-c C-d")
-                                    (lambda ()
-                                      (interactive)
-                                      (yap-rewrite-show-diff buffer start end (buffer-string))
-                                      (pop-to-buffer yap--response-buffer))))
+                     (yap-rewrite-setup-keys buffer start end))
                    (yap--replace-response-buffer resp)
                    (pop-to-buffer yap--response-buffer)))))))
       (message "[ERROR] Failed to fill template"))))
