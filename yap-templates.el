@@ -12,6 +12,15 @@
 (require 'yap-templates-core)
 (require 'yap-utils)
 
+(defun yap--get-prompt (name)
+  "Get the prompt for NAME."
+  (with-temp-buffer
+    (insert-file-contents
+     (string-join (list (file-name-directory (locate-library "yap"))
+                        "prompts"
+                        (format "%s.md" name)) "/"))
+    (buffer-string)))
+
 (defun yap-template-prompt--default ()
   "A default template for `yap-prompt'."
   (yap-with-prompt #'yap-template-prompt))
@@ -63,37 +72,35 @@ SYSTEM-MESSAGE is the system message to be used."
 
 (defun yap-temlpates--summarize ()
   "Summarize the selected text."
-  (yap-template-prompt "Summarize the given text. Use bullet points for key ideas."))
+  (yap-template-prompt (yap--get-prompt "summarize")))
 
 (defun yap-templates--explain-code ()
   "Explain selected code."
-  (yap-template-prompt "Give a high level overview of the code and explain any tricky parts. Keep it short."))
+  (yap-template-prompt (yap--get-prompt "explain-code")))
 
 (defun yap-templates--generate-shell-command ()
   "Generate shell command."
   (let ((task (read-string "Task: ")))
-    (yap-template-prompt (concat "Generate a shell command to do the following task."
-                                 "Only return the command to be run."
-                                 "Never put it in a code block.\n"
-                                 "Task:" task))))
+    (yap-template-prompt
+     (string-replace "{{TASK}}" task
+                     (yap--get-prompt "generate-shell-command")))))
 
 (defun yap-templates--explain-code-with-comments ()
   "Explain selected code."
-  (yap-template-prompt (concat "Explain the code provided. Use comments to explain the code. "
-                               "Do not change the code. Just add comments to explain it. "
-                               "Use markdown when necessary. Retain the relative order in which data is presented in the code. "
-                               "No need to have headers like Code explanation or point by point breakdown. "
-                               "Use emojies to make it more engaging. "
-                               "Do not provide the code again. Just explain it.")))
+  (yap-template-prompt (yap--get-prompt "explain-code-with-comments")))
 
 (defun yap-templates--optimize-code ()
   "Optimize selected code."
-  (yap-template-rewrite "Optimize the provided code"))
+  (yap-template-rewrite (yap--get-prompt "optimize-code")))
+
+(defun yap-templates--find-bugs ()
+  "Find bugs in the selected code."
+  (yap-template-rewrite (yap--get-prompt "find-bugs")))
 
 (defun yap-templates--optimize-code-with-buffer-context ()
   "Optimize selected code but pass in full buffer context."
   (yap-template-buffer-context yap--default-system-prompt-for-rewrite
-                               "Optimize the provided code"
+                               (yap--get-prompt "optimize-code")
                                (current-buffer)))
 
 (defun yap-template--fix-diagnostic-error ()
@@ -217,6 +224,7 @@ PROMPT is follow up user prompt."
     (generate-shell-command . yap-templates--generate-shell-command)
     (explain-code-with-comments . yap-templates--explain-code-with-comments)
     (optimize-code . yap-templates--optimize-code)
+    (find-bugs . yap-templates--find-bugs)
     (optimize-code-buffer-context . yap-templates--optimize-code-with-buffer-context)
     (fix-diagnostic-error . yap-template--fix-diagnostic-error)
     (explain-using-mermaid . yap-template--explain-using-mermaid)
