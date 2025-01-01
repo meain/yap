@@ -137,7 +137,7 @@ service is specified, log an error message and return nil."
       ("openrouter" (make-llm-openai-compatible :key yap-api-key:openrouter :chat-model yap-model :url yap-llm-base-url:openrouter))
       ("github" (make-llm-openai-compatible :key yap-api-key:github :chat-model yap-model :url yap-llm-base-url:github))
       ("anthropic" (make-llm-claude :key yap-api-key:anthropic :chat-model yap-model))
-      (_ (message "[ERROR] Unsupported service: %s" yap-service) nil))))
+      (_ (error "[ERROR] Unsupported service: %s" yap-service)))))
 
 (defun yap--llm-generate-prompt (llm-messages)
   "Generate prompt based on `LLM-MESSAGES'."
@@ -258,10 +258,10 @@ START and END are the region to replace in original buffer."
   (with-current-buffer buffer
     (let* ((existing (buffer-substring-no-properties start end))
            (file-name (buffer-file-name buffer))
-           (file-extension (file-name-extension file-name))
-           (original-temp-file (make-temp-file "yap-rewrite-tmp-" nil (concat "." file-extension)))
-           (new-temp-file (make-temp-file "yap-rewrite-tmp-" nil (concat "." file-extension)))
-           (empty-temp-file (make-temp-file "yap-rewrite-tmp-" nil (concat "." file-extension)))
+           (file-extension (if file-name (concat "." (file-name-extension file-name)) ""))
+           (original-temp-file (make-temp-file "yap-rewrite-tmp-" nil file-extension))
+           (new-temp-file (make-temp-file "yap-rewrite-tmp-" nil file-extension))
+           (empty-temp-file (make-temp-file "yap-rewrite-tmp-" nil file-extension))
            (command (format "git merge-file --no-diff3 -L Original -L Empty -L 'LLM Response' -p %s %s %s"
                             original-temp-file empty-temp-file new-temp-file)))
       (with-temp-file original-temp-file (insert existing))
@@ -342,7 +342,7 @@ Rewrite the buffer or selection if present with the returned response."
                ;; Using buffer text instead of message, this will let the user edit
                ;; the llm response and then use the edited version for rewrites.
                (if yap-rewrite-auto-accept
-                   (yap-rewrite-accept buffer start end)
+                   (yap-rewrite-accept buffer start end (buffer-string))
                  (progn
                    (with-current-buffer yap--response-buffer
                      (setq header-line-format
