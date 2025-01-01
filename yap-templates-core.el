@@ -20,21 +20,22 @@
 
 ;;; Code:
 
+(defun yap--get-prompt (name)
+  "Get the prompt for NAME."
+  (with-temp-buffer
+    (insert-file-contents
+     (string-join (list (file-name-directory (locate-library "yap"))
+                        "prompts"
+                        (format "%s.md" name)) "/"))
+    (buffer-string)))
+
+
 (defconst yap--default-system-prompt-for-prompt
-  (concat "You are a helpful assistant. "
-          "Give concise answers to questions. "
-          "Don't be too chatty. "
-          "Do not ask or suggest follow up questions. "
-          "For code blocks mark it with the language name.")
+  (yap--get-prompt "default-prompt-system-message")
   "The system prompt to use for the `yap-prompt' command.")
 
 (defconst yap--default-system-prompt-for-rewrite
-  (concat "You are a helpful assistant who helps rewrite/refactor code and prose. "
-          "Do not ask or suggest follow up questions. "
-          "For code responses, ONLY provide the code without any extra explanation."
-          "Keep the useful comments in the code."
-          "NEVER put code block in ``` in the response. "
-          "ALWAYS provide the full code to be rewritten and not just the new changes.")
+  (yap--get-prompt "default-rewrite-system-message")
   "The system prompt to use for the `yap-rewrite' command.")
 
 (defun yap--create-messages (system-prompt user-prompt &optional context)
