@@ -12,15 +12,6 @@
 (require 'yap-templates-core)
 (require 'yap-utils)
 
-(defun yap--get-prompt (name)
-  "Get the prompt for NAME."
-  (with-temp-buffer
-    (insert-file-contents
-     (string-join (list (file-name-directory (locate-library "yap"))
-                        "prompts"
-                        (format "%s.md" name)) "/"))
-    (buffer-string)))
-
 (defun yap-template-prompt--default ()
   "A default template for `yap-prompt'."
   (yap-with-prompt #'yap-template-prompt))
