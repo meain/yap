@@ -133,6 +133,7 @@ service is specified, log an error message and return nil."
       yap-llm-provider-override
     (pcase yap-service
       ("openai" (make-llm-openai :key yap-api-key:openai :chat-model yap-model))
+      ("ollama" (make-llm-openai-compatible :chat-model yap-model :url yap-llm-base-url:ollama))
       ("groq" (make-llm-openai-compatible :key yap-api-key:groq :chat-model yap-model :url yap-llm-base-url:groq))
       ("openrouter" (make-llm-openai-compatible :key yap-api-key:openrouter :chat-model yap-model :url yap-llm-base-url:openrouter))
       ("github" (make-llm-openai-compatible :key yap-api-key:github :chat-model yap-model :url yap-llm-base-url:github))
