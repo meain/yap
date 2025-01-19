@@ -35,6 +35,7 @@ To install `yap`, add the following to your Emacs configuration:
 ```emacs-lisp
 (use-package yap
   :load-path "path-to-yap-directory"
+  :straight (:type git :host github :repo "meain/yap" :files (:defaults "prompts"))
   :config
   ;; Setup API keys
   (setq yap-api-key:openai "your-openai-api-key")
