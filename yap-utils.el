@@ -205,31 +205,33 @@ manage it unfortunately."
   :group 'yap)
 
 ;; https://github.com/marketplace/models/catalog
-(defcustom yap--github-models
-  '("gpt-4o-mini"
-    "gpt-4o"
-    "o1-mini"
-    "o1-preview"
-    "Phi-3.5-MoE-instruct"
-    "Phi-3.5-vision-instruct"
-    "Cohere-command-r"
-    "Mistral-large-2407")
-  "List of Github models available for use."
-  :type '(repeat string)
-  :group 'yap)
-
 (defun yap--get-models:github ()
-  "Return list of GH models.
-Github models does not publish allow getting model via API endpoint
-and so we have to manually manage it unfortunately."
-  yap--github-models)
+  "Get a list of GitHub models available."
+  (let* ((url-request-method "GET")
+         (url-request-extra-headers
+          `(("Content-Type" . "application/json")
+            ("X-Requested-With" . "XMLHttpRequest")))
+         (url-request-data-type 'json)
+         (resp (with-current-buffer (url-retrieve-synchronously
+                                     "https://github.com/marketplace/models")
+                 (goto-char (point-min))
+                 (re-search-forward "^$")
+                 (json-read))))
+    (if resp
+        (mapcar (lambda (x) (alist-get 'name x))
+                resp)
+      (message "[ERROR] Unable to get models: %s"
+               (if (not resp)
+                   "Response is empty"
+                 (yap--get-error-message resp)))
+      nil)))
 
 (defun yap--select-multiple-files-and-buffers (show-files show-buffers)
   "Select multiple files and buffers within the current project.
 
-Show only files if SHOW-FILES is non-nil, show only buffers if
-SHOW-BUFFERS is non-nil.  Returns a plist with :files and :buffers
-keys."
+  Show only files if SHOW-FILES is non-nil, show only buffers if
+  SHOW-BUFFERS is non-nil.  Returns a plist with :files and :buffers
+  keys."
   (let* ((project-root (when (fboundp 'project-root)
                          (project-root (project-current))))
          (project-files (when project-root
