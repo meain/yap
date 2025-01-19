@@ -81,9 +81,9 @@ name suggest."
     (if selection
         `((:role system :content ,system-prompt)
           (:role user :content ,(concat "I'll provide a document in which I have highlighted a section. "
-                                          language-text
-                                          "Answer should be specific to the highlighted section but use "
-                                          "the rest of the text as context to understand the patterns and intent."))
+                                        language-text
+                                        "Answer should be specific to the highlighted section but use "
+                                        "the rest of the text as context to understand the patterns and intent."))
           (:role assistant :content "Sure, give me the full document content")
           (:role user :content ,full)
           (:role assistant :content "OK. What is the highlighted section?")
@@ -93,7 +93,7 @@ name suggest."
 
       `((:role system :content ,system-prompt)
         (:role user :content ,(concat "I'll provide you with the document I'm working on and a follow up question. "
-                                        "Answer my follow up question using the context provided."))
+                                      "Answer my follow up question using the context provided."))
         (:role assistant :content "Sure, give me the full document content")
         (:role user :content ,full)
         (:role assistant :content "What can I help you with?")
