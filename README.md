@@ -34,7 +34,7 @@ To install `yap`, add the following to your Emacs configuration:
 
 ```emacs-lisp
 (use-package yap
-  :load-path "path-to-yap-directory"
+  ;; :load-path "path-to-yap-directory" ;; If you are not using straight
   :straight (:type git :host github :repo "meain/yap" :files (:defaults "prompts"))
   :config
   ;; Setup API keys
