@@ -142,10 +142,16 @@ name suggests."
   "A template for `yap-rewrite' using `PROMPT' and buffer contents as context."
   (yap-template-buffer-context yap--default-system-prompt-for-rewrite prompt (current-buffer)))
 
-(defun yap-with-prompt (func)
-  "Wrap a `FUNC' with a prompt."
-  (let ((prompt (read-string "Prompt: " nil 'yap-prompt-history (current-word))))
-    (funcall func prompt)))
+(defun yap-with-prompt (function)
+  "Execute `FUNCTION' with a user-defined prompt.
+The prompt is collected from the minibuffer, where the current word
+serves as the default input.  The prompt is also recorded in the
+`yap-prompt-history` list for future reference.  To insert a newline
+within the prompt, use `S-<return>` while inputting."
+  (funcall function
+           (let ((minibuffer-local-map (copy-keymap minibuffer-local-map)))
+             (define-key minibuffer-local-map (kbd "S-<return>") 'newline)
+             (read-string "Prompt: " nil 'yap-prompt-history (current-word)))))
 
 (defun yap--get-selected-text (buffer)
   "Get the selected text in the specified BUFFER, if any."
