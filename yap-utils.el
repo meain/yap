@@ -126,17 +126,6 @@
       (insert (format "Error:\n%s" body))))
   (message "An error occurred. Please check the *yap-errors* buffer for details."))
 
-
-;;; Provider specific stuff
-;; https://docs.anthropic.com/en/docs/about-claude/models#model-names
-(defcustom yap--anthropic-models
-  '("claude-3-5-sonnet-latest"
-    "claude-3-opus-latest"
-    "claude-3-5-haiku-latest")
-  "List of Anthropic models available for use."
-  :type '(repeat string)
-  :group 'yap)
-
 (defcustom yap-llm-base-url:anthropic "https://api.anthropic.com/v1/"
   "The base URL for Anthropic."
   :type 'string
