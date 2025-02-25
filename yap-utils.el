@@ -137,11 +137,32 @@
   :type '(repeat string)
   :group 'yap)
 
+(defcustom yap-llm-base-url:anthropic "https://api.anthropic.com/v1/"
+  "The base URL for Anthropic."
+  :type 'string
+  :group 'yap)
+
 (defun yap--get-models:anthropic ()
-  "Get available models from Anthropic.
-Anthropic does not publish an API endpoint and so we have to manually
-manage it unfortunately."
-  yap--anthropic-models)
+  "Get the models for Anthropic."
+  (let* ((url-request-method "GET")
+         (url-request-extra-headers
+          `(("Content-Type" . "application/json")
+            ("anthropic-version" . "2023-06-01")
+            ("x-api-key" . ,yap-api-key:anthropic)))
+         (url-request-data-type 'json)
+         (resp (with-current-buffer (url-retrieve-synchronously
+                                     (concat yap-llm-base-url:anthropic "/models"))
+                 (goto-char (point-min))
+                 (re-search-forward "^$")
+                 (json-read))))
+    (if (and resp (alist-get 'data resp))
+        (mapcar (lambda (x) (alist-get 'id x))
+                (alist-get 'data resp))
+      (message "[ERROR] Unable to get models: %s"
+               (if (not resp)
+                   "Response is empty"
+                 (yap--get-error-message resp)))
+      nil)))
 
 (defconst yap-llm-base-url:openai "https://api.openai.com/v1"
   "Base URL for the OpenAI API.")
