@@ -210,9 +210,8 @@ The response from LLM is displayed in the *yap-response* buffer."
 
 (defun yap-rewrite-cancel ()
   "Cancel the rewrite and kill the buffer."
-  (with-current-buffer yap--response-buffer
-    (kill-buffer)
-    (message "Canceled rewrite")))
+  (kill-buffer yap--response-buffer)
+  (message "Canceled rewrite"))
 
 (defun yap-rewrite-delete-diff-buffer ()
   "Delete the diff buffer."
