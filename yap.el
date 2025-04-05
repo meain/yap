@@ -98,7 +98,9 @@
                       ("github" (yap--get-models:github))
                       ("anthropic" (yap--get-models:anthropic))))
             (model-name (completing-read "Model: " models)))
-      (setq yap-model model-name)))
+      (progn
+        (setq yap-llm-provider-override nil)
+        (setq yap-model model-name))))
 
 (defun yap--save-interaction (messages resp)
   "Save llm `MESSAGES' and `RESP' to disk."
