@@ -75,9 +75,12 @@
 
 (defun yap--get-error-message (object)
   "Parse out error message from the OBJECT if possible."
-  (if (alist-get 'error object)
-      (alist-get 'message (alist-get 'error object))
-    object))
+  (let ((err (alist-get 'error object)))
+    (if (not err)
+        object
+      (if (and (listp err) (alist-get 'message err))
+          (alist-get 'message err)
+        err))))
 
 (defun yap--convert-messages-sans-system (messages)
   "Convert MESSAGES from (role . content) to OpenAI format, without system message."
@@ -209,26 +212,27 @@
   :type 'string
   :group 'yap)
 
-;; https://github.com/marketplace/models/catalog
+;; There is no reliable way, this is best-effort
+;; https://github.com/Azure/github-models/issues/5
 (defun yap--get-models:github ()
   "Get a list of GitHub models available."
   (let* ((url-request-method "GET")
          (url-request-extra-headers
           `(("Content-Type" . "application/json")
-            ("X-Requested-With" . "XMLHttpRequest")))
+            ;; ("Authorization" . ,(format "Bearer %s" yap-api-key:github))
+	    ))
          (url-request-data-type 'json)
          (resp (with-current-buffer (url-retrieve-synchronously
-                                     "https://github.com/marketplace/models")
+                                     (concat yap-llm-base-url:github "/models"))
                  (goto-char (point-min))
                  (re-search-forward "^$")
                  (json-read))))
-    (if resp
-        (mapcar (lambda (x) (alist-get 'name x))
-                resp)
+    (if (and resp (vectorp resp))
+	(mapcar (lambda (x) (alist-get 'name x)) resp)
       (message "[ERROR] Unable to get models: %s"
                (if (not resp)
-                   "Response is empty"
-                 (yap--get-error-message resp)))
+		   "Response is empty"
+		 (yap--get-error-message resp)))
       nil)))
 
 (defun yap--select-multiple-files-and-buffers (show-files show-buffers)
