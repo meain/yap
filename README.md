@@ -42,8 +42,8 @@ To install `yap`, add the following to your Emacs configuration:
   (setq yap-api-key:anthropic "your-anthropic-api-key")
 
   ;; Optionally you can specify a service and model
-  (yap-set-service "openai") ; default: openai
-  (yap-set-model "gpt-4o") ; default: gpt-4o
+  (setq yap-service "openai") ; default: openai
+  (setq yap-model "gpt-4o") ; default: gpt-4o
 
   ;; You could also set any provider from ahyatt/llm like below
   (setq yap-llm-provider-override (make-llm-openai :key openai-api-key :chat-model model))
@@ -63,6 +63,20 @@ To install `yap`, add the following to your Emacs configuration:
   (global-set-key (kbd "<your-fav-keybinding>") 'yap-rewrite)
   (global-set-key (kbd "<your-fav-keybinding>") 'yap-write)
   (global-set-key (kbd "<your-fav-keybinding>") (lambda () (interactive) (yap-prompt 'explain-code))))
+```
+
+Alternatively, you can install `yap` with:
+
+```
+M-x package-vc-install
+Fetch and install package: https://github.com/meain/yap
+```
+
+Update it with:
+
+```
+M-x package-vc-upgrade
+Upgrade VC package: yap
 ```
 
 ## Basic Usage
