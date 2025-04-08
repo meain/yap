@@ -86,10 +86,7 @@ Create and fetch reusable prompt files stored in your Emacs directory, letting y
   "Get the prompt for NAME."
   (with-temp-buffer
     (insert-file-contents
-     (string-join (list
-                   (expand-file-name user-emacs-directory)
-                   "prompts"
-                   (format "%s.md" name)) "/"))
+     (concat user-emacs-directory "prompts/" name ".md"))
     (buffer-string)))
 
 (add-to-list

@@ -350,7 +350,7 @@ Rewrite the buffer or selection if present with the returned response."
                      (setq header-line-format
                            (concat
                             "C-c C-c: Accept rewrite | "
-                            "C-c C-a: Apply diff |"
+                            "C-c C-a: Apply diff | "
                             "C-c C-d: View diff | "
                             "C-c C-k: Cancel"))
                      (yap-rewrite-setup-keys buffer start end))
