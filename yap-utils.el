@@ -212,25 +212,26 @@
   :type 'string
   :group 'yap)
 
-;; There is no reliable way, this is best-effort
-;; https://github.com/Azure/github-models/issues/5
+;; https://github.com/marketplace/models/catalog
 (defun yap--get-models:github ()
   "Get a list of GitHub models available."
   (let* ((url-request-method "GET")
          (url-request-extra-headers
-          `(("Content-Type" . "application/json")))
+          `(("Content-Type" . "application/json")
+            ("X-Requested-With" . "XMLHttpRequest")))
          (url-request-data-type 'json)
          (resp (with-current-buffer (url-retrieve-synchronously
-                                     (concat yap-llm-base-url:github "/models"))
+                                     "https://github.com/marketplace/models")
                  (goto-char (point-min))
                  (re-search-forward "^$")
                  (json-read))))
-    (if (and resp (vectorp resp))
-	    (mapcar (lambda (x) (alist-get 'name x)) resp)
+    (if resp
+        (mapcar (lambda (x) (alist-get 'name x))
+                resp)
       (message "[ERROR] Unable to get models: %s"
                (if (not resp)
-		           "Response is empty"
-		         (yap--get-error-message resp)))
+                   "Response is empty"
+                 (yap--get-error-message resp)))
       nil)))
 
 (defun yap--select-multiple-files-and-buffers (show-files show-buffers)
