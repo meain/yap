@@ -119,6 +119,9 @@
       (with-temp-file json-file
         (insert json-data)))))
 
+(defvar yap--current-request nil
+  "The handle for the currently active LLM request, if any.")
+
 (defcustom yap-llm-provider-override nil
   "Override the LLM provider.
 Supports any provider from ahyatt/llm."
@@ -152,19 +155,33 @@ service is specified, log an error message and return nil."
 (defun yap-do (messages partial-callback &optional final-callback)
   "Get LLM response for MESSAGES.
 Call PARTIAL-CALLBACK with each chunk, FINAL-CALLBACK with final response."
+  (yap-abort)
   (let ((llm-warn-on-nonfree nil) ; this is a personal choice
         ;; (llm-log t) ; use this to log
         (llm-provider (yap--get-provider))
         (prompt (yap--llm-generate-prompt messages)))
     (yap--clean-response-buffer)
     (message "Processing request via %s and %s model..." yap-service yap-model)
-    (llm-chat-streaming llm-provider
-                        prompt
-                        partial-callback
-                        (lambda (resp)
-                          (yap--save-interaction messages resp)
-                          (when final-callback (funcall final-callback resp)))
-                        (lambda (_ error) (message "Error processing request: %s" error)))))
+    (setq yap--current-request
+          (llm-chat-streaming llm-provider
+                              prompt
+                              partial-callback
+                              (lambda (resp)
+                                (setq yap--current-request nil)
+                                (yap--save-interaction messages resp)
+                                (when final-callback (funcall final-callback resp)))
+                              (lambda (_ error)
+                                (setq yap--current-request nil)
+                                (message "Error processing request: %s" error))))))
+
+;;;###autoload
+(defun yap-abort ()
+  "Abort the current ongoing LLM request, if any."
+  (interactive)
+  (when yap--current-request
+    (llm-cancel-request yap--current-request)
+    (setq yap--current-request nil)
+    (message "Aborted current yap request")))
 
 ;;;###autoload
 (defun yap-buffer-close ()
