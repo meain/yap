@@ -145,6 +145,12 @@ service is specified, log an error message and return nil."
       ("anthropic" (make-llm-claude :key yap-api-key:anthropic :chat-model yap-model))
       (_ (error "[ERROR] Unsupported service: %s" yap-service)))))
 
+(defun yap--set-response-header-line (text)
+  "Set the header line of the response buffer to TEXT, or clear if nil."
+  (when (get-buffer yap--response-buffer)
+    (with-current-buffer yap--response-buffer
+      (setq header-line-format text))))
+
 (defun yap--llm-generate-prompt (llm-messages)
   "Generate prompt based on `LLM-MESSAGES'."
   (make-llm-chat-prompt
@@ -159,19 +165,31 @@ Call PARTIAL-CALLBACK with each chunk, FINAL-CALLBACK with final response."
   (let ((llm-warn-on-nonfree nil) ; this is a personal choice
         ;; (llm-log t) ; use this to log
         (llm-provider (yap--get-provider))
-        (prompt (yap--llm-generate-prompt messages)))
+        (prompt (yap--llm-generate-prompt messages))
+        (service yap-service)
+        (model yap-model))
     (yap--clean-response-buffer)
-    (message "Processing request via %s and %s model..." yap-service yap-model)
+    (yap--set-response-header-line
+     (format "Streaming from %s/%s [0 lines]..." service model))
+    (message "Processing request via %s and %s model..." service model)
     (setq yap--current-request
           (llm-chat-streaming llm-provider
                               prompt
-                              partial-callback
+                              (lambda (resp)
+                                (funcall partial-callback resp)
+                                (yap--set-response-header-line
+                                 (format "Streaming from %s/%s [%d lines]..."
+                                         service model
+                                         (with-current-buffer (get-buffer-create yap--response-buffer)
+                                           (count-lines (point-min) (point-max))))))
                               (lambda (resp)
                                 (setq yap--current-request nil)
+                                (yap--set-response-header-line nil)
                                 (yap--save-interaction messages resp)
                                 (when final-callback (funcall final-callback resp)))
                               (lambda (_ error)
                                 (setq yap--current-request nil)
+                                (yap--set-response-header-line nil)
                                 (message "Error processing request: %s" error))))))
 
 ;;;###autoload
@@ -181,6 +199,7 @@ Call PARTIAL-CALLBACK with each chunk, FINAL-CALLBACK with final response."
   (when yap--current-request
     (llm-cancel-request yap--current-request)
     (setq yap--current-request nil)
+    (yap--set-response-header-line nil)
     (message "Aborted current yap request")))
 
 ;;;###autoload
